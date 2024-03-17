@@ -5,9 +5,7 @@ use gl;
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, WindowEvent};
 
 use crate::plot::{
-    buffer::{Buffer, BufferType},
-    shader::ShaderProgram,
-    vao::VertexArray,
+    buffer::{Buffer, BufferType}, shader::{PlotShader, ShaderProgram, ShaderUniform}, vao::VertexArray
 };
 
 pub mod buffer;
@@ -53,7 +51,8 @@ impl Plot {
             glfw::OpenGlProfileHint::Core,
         ));
         glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
-        glfw.window_hint(glfw::WindowHint::Resizable(false));
+        glfw.window_hint(glfw::WindowHint::DoubleBuffer(true));
+        //glfw.window_hint(glfw::WindowHint::Resizable(false));
         // Create a windowed mode window and its OpenGL context
         let (mut window, events) = glfw
             .create_window(width, height, title, glfw::WindowMode::Windowed)
@@ -61,9 +60,15 @@ impl Plot {
 
         gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
+        unsafe {
+
+            gl::Viewport(0, 0, width as i32, height as i32);
+
+        }
         // Make the window's context current
         window.make_current();
         window.set_key_polling(true);
+        window.set_size_polling(true);
 
         Self {
             window,
@@ -87,10 +92,10 @@ impl Plot {
         type TriIndexes = [u32; 3];
 
         const VERTICES: [Vertex; 4] = [
-            [0.5, 0.5, 0.0],
-            [0.5, -0.5, 0.0],
-            [-0.5, -0.5, 0.0],
-            [-0.5, 0.5, 0.0],
+            [1.0, 1.0, 0.0],
+            [1.0, -1.0, 0.0],
+            [-1.0, -1.0, 0.0],
+            [-1.0, 1.0, 0.0],
         ];
 
         const INDICES: [TriIndexes; 2] = [[0, 1, 3], [1, 2, 3]];
@@ -130,6 +135,24 @@ impl Plot {
         let shader = ShaderProgram::from_vert_frag(vert_shader, frag_shader)
             .expect("Could not compile shaders");
 
+        let vp = ShaderUniform::load(&shader, "vp\0").expect("Could not load vp");
+        let offset = ShaderUniform::load(&shader, "offset\0").expect("Could not load offset");
+        let pitch = ShaderUniform::load(&shader, "pitch\0").expect("Could not load pitch");
+        
+        let plot_shader = PlotShader {
+            shader,
+            vp,
+            offset,
+            pitch
+        };
+
+        let size = self.window.get_size();
+        plot_shader.shader.use_program();
+        plot_shader.offset.set([0.0,0.0]);
+        plot_shader.pitch.set([100.0,100.0]);
+        plot_shader.vp.set([size.0 as f32, size.1 as f32]);
+
+
         vao.bind();
 
         // Loop until the user closes the window
@@ -142,12 +165,24 @@ impl Plot {
             // Poll for and process events
             self.glfw_context.poll_events();
             for (_, event) in glfw::flush_messages(&self.window_events) {
-                if let glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) = event {
-                    self.window.set_should_close(true)
+                match event {
+                    glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+                        self.window.set_should_close(true)
+                    },
+                    glfw::WindowEvent::Size(w, h) => {
+                        unsafe {
+                            gl::Viewport(0, 0, w, h);
+                        }
+                        let pos = self.window.get_pos();
+                        self.window.set_pos(pos.0 + 1, pos.1);
+                        plot_shader.vp.set([w as f32, h as f32]);
+                    }
+                    _ => {}
                 }
             }
 
-            shader.use_program();
+            plot_shader.shader.use_program();
+
             unsafe {
                 gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
             }
@@ -155,6 +190,6 @@ impl Plot {
             // Swap front and back buffers
             self.window.swap_buffers();
         }
-        shader.delete();
+        plot_shader.shader.delete();
     }
 }

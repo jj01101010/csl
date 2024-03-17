@@ -8,10 +8,10 @@ uniform vec2 pitch;
 
 void main() {
 
-  float lX = gl_FragCoord.x;
-  float lY = gl_FragCoord.y;
+  float lX = gl_FragCoord.x / vp[0];
+  float lY = gl_FragCoord.y / vp[1];
 
-  float scaleFactor = 1.0;
+  float scaleFactor = 200.0;
 
   float offX = (scaleFactor * offset[0]) + lX * scaleFactor;
   float offY = (scaleFactor * offset[1]) + (1.0 - lY) * scaleFactor;
@@ -20,6 +20,6 @@ void main() {
       int(mod(offY, pitch[1])) == 0) {
     final_color = vec4(0.0, 0.0, 0.0, 0.5);
   } else {
-    final_color = vec4(lX / vp[0], lY / vp[1], 0.0, 1.0);
+    final_color = vec4(lX, lY, 0.0, 1.0);
   }
 }
