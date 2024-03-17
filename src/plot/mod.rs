@@ -1,5 +1,5 @@
 extern crate glfw;
-use std::mem::size_of;
+use std::{fs::File, io::Read, mem::size_of};
 
 use gl;
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, WindowEvent};
@@ -36,6 +36,15 @@ pub fn polygon_mode(mode: PolygonMode) {
     unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, mode as u32) };
 }
 
+fn read_file(filename: &str) -> String {
+    let mut file = File::open(filename).expect("Could not open shader file");
+
+    let mut buffer = String::new();
+
+    file.read_to_string(&mut buffer).expect("Could not read file");
+    buffer
+}
+
 impl Plot {
     pub fn new(width: u32, height: u32, title: &str) -> Self {
         let mut glfw = glfw::init(fail_on_errors!()).unwrap();
@@ -65,7 +74,7 @@ impl Plot {
 
     pub fn show(&mut self) {
         #[cfg(debug_assertions)]
-        polygon_mode(PolygonMode::Line);
+        polygon_mode(PolygonMode::Fill);
 
         let vao = VertexArray::new().expect("Could not create VAO");
         vao.bind();
@@ -113,21 +122,12 @@ impl Plot {
             gl::EnableVertexAttribArray(0);
         }
 
-        const VERT_SHADER: &str = r#"#version 330 core
-        layout (location = 0) in vec3 pos;
-        void main() {
-          gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);
-        }
-      "#;
+        let file_content = read_file("shaders/shader.vert.glsl");
+        let vert_shader = file_content.as_str();
+        let file_content = read_file("shaders/shader.frag.glsl");
+        let frag_shader = file_content.as_str();
 
-        const FRAG_SHADER: &str = r#"#version 330 core
-          out vec4 final_color;
-          void main() {
-            final_color = vec4(1.0, 0.5, 0.2, 1.0);
-          }
-        "#;
-
-        let shader = ShaderProgram::from_vert_frag(VERT_SHADER, FRAG_SHADER)
+        let shader = ShaderProgram::from_vert_frag(vert_shader, frag_shader)
             .expect("Could not compile shaders");
 
         vao.bind();
