@@ -23,6 +23,19 @@ pub struct Plot {
     window_events: GlfwReceiver<(f64, WindowEvent)>,
 }
 
+#[cfg(debug_assertions)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PolygonMode {
+    Point = gl::POINT as isize,
+    Line = gl::LINE as isize,
+    Fill = gl::FILL as isize,
+}
+
+#[cfg(debug_assertions)]
+pub fn polygon_mode(mode: PolygonMode) {
+    unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, mode as u32) };
+}
+
 impl Plot {
     pub fn new(width: u32, height: u32, title: &str) -> Self {
         let mut glfw = glfw::init(fail_on_errors!()).unwrap();
@@ -51,6 +64,9 @@ impl Plot {
     }
 
     pub fn show(&mut self) {
+        #[cfg(debug_assertions)]
+        polygon_mode(PolygonMode::Line);
+
         let vao = VertexArray::new().expect("Could not create VAO");
         vao.bind();
 
@@ -59,11 +75,29 @@ impl Plot {
         vbo.bind(BufferType::Array);
 
         type Vertex = [f32; 3];
-        const VERTICES: [Vertex; 3] = [[-0.5, -0.5, 0.0], [0.5, -0.5, 0.0], [0.0, 0.5, 0.0]];
+        type TriIndexes = [u32; 3];
+
+        const VERTICES: [Vertex; 4] = [
+            [0.5, 0.5, 0.0],
+            [0.5, -0.5, 0.0],
+            [-0.5, -0.5, 0.0],
+            [-0.5, 0.5, 0.0],
+        ];
+
+        const INDICES: [TriIndexes; 2] = [[0, 1, 3], [1, 2, 3]];
+        let ebo = Buffer::new().expect("Could not create VBO");
+
+        ebo.bind(BufferType::ElementArray);
 
         Buffer::buffer_data(
             BufferType::Array,
             bytemuck::cast_slice(&VERTICES),
+            gl::STATIC_DRAW,
+        );
+
+        Buffer::buffer_data(
+            BufferType::ElementArray,
+            bytemuck::cast_slice(&INDICES),
             gl::STATIC_DRAW,
         );
 
@@ -115,7 +149,7 @@ impl Plot {
 
             shader.use_program();
             unsafe {
-                gl::DrawArrays(gl::TRIANGLES, 0, 3);
+                gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
             }
 
             // Swap front and back buffers
