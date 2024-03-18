@@ -210,7 +210,7 @@ impl Plot {
 
         let mut proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
 
-        let translation = glam::Mat4::from_translation(Vec3::new(150.0, 150.0, 0.0)) *  glam::Mat4::from_scale(Vec3::new(150.0, 150.0, 1.0));
+        let mut translation = glam::Mat4::from_translation(Vec3::new(150.0, 150.0, 0.0)) *  glam::Mat4::from_scale(Vec3::new(150.0, 150.0, 1.0));
 
         plot_shader.transform.set(proj * translation);
 
@@ -238,6 +238,7 @@ impl Plot {
                         unsafe {
                             gl::Viewport(0, 0, w, h);
                         }
+                        translation = glam::Mat4::from_translation(Vec3::new(w as f32 / 2.0, h as f32 / 2.0, 0.0)) *  glam::Mat4::from_scale(Vec3::new(w as f32 / 2.0, h as f32 / 2.0, 1.0));
                         proj = glam::Mat4::orthographic_lh(0.0, w as f32, 0.0, h as f32, 0.01, 100.0);
                         
                         
