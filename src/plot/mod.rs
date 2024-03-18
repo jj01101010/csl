@@ -208,15 +208,14 @@ impl Plot {
         plot_shader.offset.set([off_x, off_y]);
         plot_shader.pitch.set([100.0, 100.0]);
 
-        let mvp = glam::Mat4::from_translation(Vec3::new(0.0, 1.618 / 4.0, 0.0));
+        let mut proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
 
-        let scale = glam::Mat4::from_scale(Vec3::new(0.5, 1.618 / 4.0, 1.0));
-        //let scale = glam::Mat4::IDENTITY;
+        let translation = glam::Mat4::from_translation(Vec3::new(150.0, 150.0, 0.0)) *  glam::Mat4::from_scale(Vec3::new(150.0, 150.0, 1.0));
 
-        plot_shader.transform.set(mvp * scale);
+        plot_shader.transform.set(proj * translation);
 
         graph_shader.use_program();
-        graph_transform_uniform.set(mvp * scale);
+        graph_transform_uniform.set(proj * translation);
 
         let mut init_pos: Option<[f32; 2]> = None;
 
@@ -239,6 +238,15 @@ impl Plot {
                         unsafe {
                             gl::Viewport(0, 0, w, h);
                         }
+                        proj = glam::Mat4::orthographic_lh(0.0, w as f32, 0.0, h as f32, 0.01, 100.0);
+                        
+                        
+                        plot_shader.shader.use_program();
+                        plot_shader.transform.set(proj * translation);
+                        graph_shader.use_program();
+                        graph_transform_uniform.set(proj * translation);
+                    
+
                         let pos = self.window.get_pos();
                         self.window.set_pos(pos.0 + 1, pos.1);
                     }
@@ -289,7 +297,7 @@ impl Plot {
             graph_shader.use_program();
             graph_vao.bind();
             unsafe {
-                gl::DrawArrays(gl::POINTS, 0, graph.data.len() as i32);
+                gl::DrawArrays(gl::LINE_STRIP, 0, graph.data.len() as i32);
             }
 
             // Swap front and back buffers

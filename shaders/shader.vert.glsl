@@ -7,6 +7,6 @@ out vec3 outPos;
 uniform mat4 transform;
 
 void main() {
-  outPos = pos;
+  outPos = (transform * vec4(pos.xyz, 1.0)).xyz;
   gl_Position = transform * vec4(pos.xyz, 1.0);
 }
