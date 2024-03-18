@@ -1,4 +1,3 @@
-
 pub type Point = [f32; 2];
 
 pub struct Graph {

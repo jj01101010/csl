@@ -3,10 +3,13 @@ use std::{f32::consts::PI, fs::File, io::Read, iter::zip, mem::size_of};
 
 use gl;
 use glam::{Mat4, Vec3};
-use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, WindowEvent};
+use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, MouseButton, WindowEvent};
 
 use crate::plot::{
-    buffer::{Buffer, BufferType}, graph::{Graph, Point}, shader::{PlotShader, ShaderProgram, ShaderUniform}, vao::VertexArray
+    buffer::{Buffer, BufferType},
+    graph::{Graph, Point},
+    shader::{PlotShader, ShaderProgram, ShaderUniform},
+    vao::VertexArray,
 };
 
 pub mod buffer;
@@ -70,6 +73,8 @@ impl Plot {
         window.make_current();
         window.set_key_polling(true);
         window.set_size_polling(true);
+        window.set_cursor_pos_polling(true);
+        window.set_mouse_button_polling(true);
 
         Self {
             window,
@@ -132,24 +137,17 @@ impl Plot {
         Buffer::unbind(BufferType::Array);
         Buffer::unbind(BufferType::ElementArray);
 
+        let x = (0..=100).map(|x| (x as f32) / 100.0);
 
-        let x = (0..=100).map(|x| {
-            (x as f32)/100.0
-        });
+        let y = x.clone().map(|x| f32::sin(2.0 * PI * x));
 
-        let y = x.clone().map(|x| {
-            f32::sin(2.0 * PI * x)
-        });
-
-        let points: Vec<Point> = zip(x, y).into_iter().map(|(x, y)| {
-            [x, y]
-        }).collect();
+        let points: Vec<Point> = zip(x, y).map(|(x, y)| [x, y]).collect();
 
         let graph = Graph::new(points.into_boxed_slice());
 
         let graph_vao = VertexArray::new().expect("Could not create VAO");
         graph_vao.bind();
-        
+
         let graph_vbo = Buffer::new().expect("Could not create VBO");
         graph_vbo.bind(BufferType::Array);
         Buffer::buffer_data(
@@ -188,37 +186,31 @@ impl Plot {
         let graph_shader = ShaderProgram::from_vert_frag(vert_shader_graph, frag_shader_graph)
             .expect("Could not compile shaders");
 
-
-        let vp = ShaderUniform::load(&shader, "vp\0").expect("Could not load vp");
         let offset = ShaderUniform::load(&shader, "offset\0").expect("Could not load offset");
         let pitch = ShaderUniform::load(&shader, "pitch\0").expect("Could not load pitch");
-        let transform_uniform = ShaderUniform::load(&shader, "transform\0").expect("Could not load pitch");
-
+        let transform_uniform =
+            ShaderUniform::load(&shader, "transform\0").expect("Could not load pitch");
 
         let plot_shader = PlotShader {
             shader,
-            vp,
             offset,
             pitch,
             transform: transform_uniform,
         };
 
-        let graph_transform_uniform: ShaderUniform<Mat4> = ShaderUniform::load(&graph_shader, "transform\0").expect("Could not load pitch");
+        let graph_transform_uniform: ShaderUniform<Mat4> =
+            ShaderUniform::load(&graph_shader, "transform\0").expect("Could not load pitch");
 
+        let mut off_x = 0.0;
+        let mut off_y = 0.0;
 
-        let size = self.window.get_size();
         plot_shader.shader.use_program();
-        plot_shader.offset.set([0.0, 0.0]);
+        plot_shader.offset.set([off_x, off_y]);
         plot_shader.pitch.set([100.0, 100.0]);
-        plot_shader.vp.set([size.0 as f32, size.1 as f32]);
 
-        let mvp = glam::Mat4::from_translation(Vec3::new(
-            0.0,
-            1.618/4.0,
-            0.0
-        ));
-        
-        let scale = glam::Mat4::from_scale(Vec3::new(0.5, 1.618/4.0, 1.0));
+        let mvp = glam::Mat4::from_translation(Vec3::new(0.0, 1.618 / 4.0, 0.0));
+
+        let scale = glam::Mat4::from_scale(Vec3::new(0.5, 1.618 / 4.0, 1.0));
         //let scale = glam::Mat4::IDENTITY;
 
         plot_shader.transform.set(mvp * scale);
@@ -226,6 +218,7 @@ impl Plot {
         graph_shader.use_program();
         graph_transform_uniform.set(mvp * scale);
 
+        let mut init_pos: Option<[f32; 2]> = None;
 
         // Loop until the user closes the window
         while !self.window.should_close() {
@@ -248,7 +241,40 @@ impl Plot {
                         }
                         let pos = self.window.get_pos();
                         self.window.set_pos(pos.0 + 1, pos.1);
-                        plot_shader.vp.set([w as f32, h as f32]);
+                    }
+                    glfw::WindowEvent::MouseButton(btn, action, _) => {
+                        if btn == MouseButton::Button1 {
+                            if action == Action::Press {
+                                if init_pos.is_none() {
+                                    let c_pos = self.window.get_cursor_pos();
+                                    let window_pos = self.window.get_pos();
+                                    let window_size = self.window.get_size();
+
+                                    let x_scaled = (c_pos.0 as f32 - window_pos.0 as f32)
+                                        / window_size.0 as f32;
+                                    let y_scaled = (c_pos.1 as f32 - window_pos.1 as f32)
+                                        / window_size.1 as f32;
+                                    init_pos = Some([x_scaled + off_x, y_scaled + off_y]);
+                                }
+                            } else if action == Action::Release {
+                                init_pos = None;
+                            }
+                        }
+                    }
+                    glfw::WindowEvent::CursorPos(x, y) => {
+                        if let Some(init_pos) = init_pos {
+                            let window_pos = self.window.get_pos();
+                            let window_size = self.window.get_size();
+
+                            let x_scaled = (x as f32 - window_pos.0 as f32) / window_size.0 as f32;
+                            let y_scaled = (y as f32 - window_pos.1 as f32) / window_size.1 as f32;
+
+                            off_x = init_pos[0] - x_scaled;
+                            off_y = init_pos[1] - y_scaled;
+
+                            plot_shader.shader.use_program();
+                            plot_shader.offset.set([off_x, off_y]);
+                        }
                     }
                     _ => {}
                 }
@@ -263,7 +289,7 @@ impl Plot {
             graph_shader.use_program();
             graph_vao.bind();
             unsafe {
-                gl::DrawArrays(gl::LINE_STRIP, 0, graph.data.len() as i32);
+                gl::DrawArrays(gl::POINTS, 0, graph.data.len() as i32);
             }
 
             // Swap front and back buffers

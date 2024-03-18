@@ -157,7 +157,7 @@ impl<T> ShaderUniform<T> {
         unsafe {
             id = gl::GetUniformLocation(program.0, name.as_ptr().cast());
         }
-        if id != -2 {
+        if id != -1 {
             Some(Self {
                 id,
                 phantom: PhantomData,
@@ -184,7 +184,6 @@ impl ShaderUniform<[f32; 2]> {
     }
 }
 
-
 impl ShaderUniform<glam::Mat4> {
     pub fn set(&self, value: glam::Mat4) {
         unsafe {
@@ -195,7 +194,6 @@ impl ShaderUniform<glam::Mat4> {
 
 pub struct PlotShader {
     pub shader: ShaderProgram,
-    pub vp: ShaderUniform<[f32; 2]>,
     pub offset: ShaderUniform<[f32; 2]>,
     pub pitch: ShaderUniform<[f32; 2]>,
     pub transform: ShaderUniform<glam::Mat4>,
