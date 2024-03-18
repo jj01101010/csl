@@ -1,14 +1,15 @@
 extern crate glfw;
-use std::{fs::File, io::Read, mem::size_of};
+use std::{f32::consts::PI, fs::File, io::Read, iter::zip, mem::size_of};
 
 use gl;
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, WindowEvent};
 
 use crate::plot::{
-    buffer::{Buffer, BufferType}, shader::{PlotShader, ShaderProgram, ShaderUniform}, vao::VertexArray
+    buffer::{Buffer, BufferType}, graph::{Graph, Point}, shader::{PlotShader, ShaderProgram, ShaderUniform}, vao::VertexArray
 };
 
 pub mod buffer;
+pub mod graph;
 pub mod shader;
 pub mod vao;
 
@@ -39,7 +40,8 @@ fn read_file(filename: &str) -> String {
 
     let mut buffer = String::new();
 
-    file.read_to_string(&mut buffer).expect("Could not read file");
+    file.read_to_string(&mut buffer)
+        .expect("Could not read file");
     buffer
 }
 
@@ -61,9 +63,7 @@ impl Plot {
         gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
         unsafe {
-
             gl::Viewport(0, 0, width as i32, height as i32);
-
         }
         // Make the window's context current
         window.make_current();
@@ -127,33 +127,82 @@ impl Plot {
             gl::EnableVertexAttribArray(0);
         }
 
+        VertexArray::unbind();
+        Buffer::unbind(BufferType::Array);
+        Buffer::unbind(BufferType::ElementArray);
+
+
+        let x = (1..=100).map(|x| {
+            (x as f32)/100.0
+        });
+
+        let y = x.clone().map(|x| {
+            f32::sin(2.0 * PI * x)
+        });
+
+        let points: Vec<Point> = zip(x, y).into_iter().map(|(x, y)| {
+            [x, y]
+        }).collect();
+
+        let graph = Graph::new(points.into_boxed_slice());
+
+        let graph_vao = VertexArray::new().expect("Could not create VAO");
+        graph_vao.bind();
+        
+        let graph_vbo = Buffer::new().expect("Could not create VBO");
+        graph_vbo.bind(BufferType::Array);
+        Buffer::buffer_data(
+            BufferType::Array,
+            bytemuck::cast_slice(&graph.data),
+            gl::STATIC_DRAW,
+        );
+
+        unsafe {
+            gl::VertexAttribPointer(
+                0,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                size_of::<Point>().try_into().unwrap(),
+                std::ptr::null(),
+            );
+            gl::EnableVertexAttribArray(0);
+        }
+
+        VertexArray::unbind();
+        Buffer::unbind(BufferType::Array);
+
         let file_content = read_file("shaders/shader.vert.glsl");
         let vert_shader = file_content.as_str();
-        let file_content = read_file("shaders/shader.frag.glsl");
+        let file_content = read_file("shaders/shader_no_rescale.frag.glsl");
         let frag_shader = file_content.as_str();
+        let file_content = read_file("shaders/shader_graph.frag.glsl");
+        let frag_shader_graph = file_content.as_str();
 
         let shader = ShaderProgram::from_vert_frag(vert_shader, frag_shader)
             .expect("Could not compile shaders");
 
+        let graph_shader = ShaderProgram::from_vert_frag(vert_shader, frag_shader_graph)
+            .expect("Could not compile shaders");
+
+
         let vp = ShaderUniform::load(&shader, "vp\0").expect("Could not load vp");
         let offset = ShaderUniform::load(&shader, "offset\0").expect("Could not load offset");
         let pitch = ShaderUniform::load(&shader, "pitch\0").expect("Could not load pitch");
-        
+
         let plot_shader = PlotShader {
             shader,
             vp,
             offset,
-            pitch
+            pitch,
         };
 
         let size = self.window.get_size();
         plot_shader.shader.use_program();
-        plot_shader.offset.set([0.0,0.0]);
-        plot_shader.pitch.set([100.0,100.0]);
+        plot_shader.offset.set([0.0, 0.0]);
+        plot_shader.pitch.set([100.0, 100.0]);
         plot_shader.vp.set([size.0 as f32, size.1 as f32]);
 
-
-        vao.bind();
 
         // Loop until the user closes the window
         while !self.window.should_close() {
@@ -168,8 +217,9 @@ impl Plot {
                 match event {
                     glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                         self.window.set_should_close(true)
-                    },
+                    }
                     glfw::WindowEvent::Size(w, h) => {
+                        plot_shader.shader.use_program();
                         unsafe {
                             gl::Viewport(0, 0, w, h);
                         }
@@ -182,9 +232,15 @@ impl Plot {
             }
 
             plot_shader.shader.use_program();
-
+            vao.bind();
             unsafe {
                 gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
+            }
+
+            graph_shader.use_program();
+            graph_vao.bind();
+            unsafe {
+                gl::DrawArrays(gl::LINE_STRIP, 0, graph.data.len() as i32);
             }
 
             // Swap front and back buffers

@@ -29,7 +29,7 @@ impl Buffer {
     }
 
     /// Clear the current vertex buffer binding for the given type.
-    pub fn clear_binding(ty: BufferType) {
+    pub fn unbind(ty: BufferType) {
         unsafe { gl::BindBuffer(ty as u32, 0) }
     }
 

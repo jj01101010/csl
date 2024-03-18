@@ -148,7 +148,7 @@ impl ShaderProgram {
 
 pub struct ShaderUniform<T> {
     id: i32,
-    phantom: PhantomData<T>
+    phantom: PhantomData<T>,
 }
 
 impl<T> ShaderUniform<T> {
@@ -160,9 +160,9 @@ impl<T> ShaderUniform<T> {
         if id != -2 {
             Some(Self {
                 id,
-                phantom: PhantomData
+                phantom: PhantomData,
             })
-        }else {
+        } else {
             None
         }
     }
@@ -176,14 +176,13 @@ impl ShaderUniform<f32> {
     }
 }
 
-impl ShaderUniform<[f32;2]> {
-    pub fn set(&self, value: [f32;2]) {
+impl ShaderUniform<[f32; 2]> {
+    pub fn set(&self, value: [f32; 2]) {
         unsafe {
             gl::Uniform2f(self.id, value[0], value[1]);
         }
     }
 }
-
 
 pub struct PlotShader {
     pub shader: ShaderProgram,
