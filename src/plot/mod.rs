@@ -6,7 +6,7 @@ use glam::{Mat4, Vec3};
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, WindowEvent};
 
 use crate::plot::{
-    buffer::{Buffer, BufferType}, graph::{Graph, Point}, shader::{PlotShader, Shader, ShaderProgram, ShaderUniform}, vao::VertexArray
+    buffer::{Buffer, BufferType}, graph::{Graph, Point}, shader::{PlotShader, ShaderProgram, ShaderUniform}, vao::VertexArray
 };
 
 pub mod buffer;
@@ -221,7 +221,7 @@ impl Plot {
         let scale = glam::Mat4::from_scale(Vec3::new(0.5, 1.618/4.0, 1.0));
         //let scale = glam::Mat4::IDENTITY;
 
-        plot_shader.transform.set((mvp * scale).clone());
+        plot_shader.transform.set(mvp * scale);
 
         graph_shader.use_program();
         graph_transform_uniform.set(mvp * scale);
