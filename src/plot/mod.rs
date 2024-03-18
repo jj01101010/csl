@@ -2,10 +2,11 @@ extern crate glfw;
 use std::{f32::consts::PI, fs::File, io::Read, iter::zip, mem::size_of};
 
 use gl;
+use glam::{Mat4, Vec3};
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, WindowEvent};
 
 use crate::plot::{
-    buffer::{Buffer, BufferType}, graph::{Graph, Point}, shader::{PlotShader, ShaderProgram, ShaderUniform}, vao::VertexArray
+    buffer::{Buffer, BufferType}, graph::{Graph, Point}, shader::{PlotShader, Shader, ShaderProgram, ShaderUniform}, vao::VertexArray
 };
 
 pub mod buffer;
@@ -132,7 +133,7 @@ impl Plot {
         Buffer::unbind(BufferType::ElementArray);
 
 
-        let x = (1..=100).map(|x| {
+        let x = (0..=100).map(|x| {
             (x as f32)/100.0
         });
 
@@ -174,34 +175,56 @@ impl Plot {
 
         let file_content = read_file("shaders/shader.vert.glsl");
         let vert_shader = file_content.as_str();
-        let file_content = read_file("shaders/shader_no_rescale.frag.glsl");
+        let file_content = read_file("shaders/shader.frag.glsl");
         let frag_shader = file_content.as_str();
         let file_content = read_file("shaders/shader_graph.frag.glsl");
         let frag_shader_graph = file_content.as_str();
+        let file_content = read_file("shaders/shader_graph.vert.glsl");
+        let vert_shader_graph = file_content.as_str();
 
         let shader = ShaderProgram::from_vert_frag(vert_shader, frag_shader)
             .expect("Could not compile shaders");
 
-        let graph_shader = ShaderProgram::from_vert_frag(vert_shader, frag_shader_graph)
+        let graph_shader = ShaderProgram::from_vert_frag(vert_shader_graph, frag_shader_graph)
             .expect("Could not compile shaders");
 
 
         let vp = ShaderUniform::load(&shader, "vp\0").expect("Could not load vp");
         let offset = ShaderUniform::load(&shader, "offset\0").expect("Could not load offset");
         let pitch = ShaderUniform::load(&shader, "pitch\0").expect("Could not load pitch");
+        let transform_uniform = ShaderUniform::load(&shader, "transform\0").expect("Could not load pitch");
+
 
         let plot_shader = PlotShader {
             shader,
             vp,
             offset,
             pitch,
+            transform: transform_uniform,
         };
+
+        let graph_transform_uniform: ShaderUniform<Mat4> = ShaderUniform::load(&graph_shader, "transform\0").expect("Could not load pitch");
+
 
         let size = self.window.get_size();
         plot_shader.shader.use_program();
         plot_shader.offset.set([0.0, 0.0]);
         plot_shader.pitch.set([100.0, 100.0]);
         plot_shader.vp.set([size.0 as f32, size.1 as f32]);
+
+        let mvp = glam::Mat4::from_translation(Vec3::new(
+            0.0,
+            1.618/4.0,
+            0.0
+        ));
+        
+        let scale = glam::Mat4::from_scale(Vec3::new(0.5, 1.618/4.0, 1.0));
+        //let scale = glam::Mat4::IDENTITY;
+
+        plot_shader.transform.set((mvp * scale).clone());
+
+        graph_shader.use_program();
+        graph_transform_uniform.set(mvp * scale);
 
 
         // Loop until the user closes the window

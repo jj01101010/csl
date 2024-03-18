@@ -184,9 +184,19 @@ impl ShaderUniform<[f32; 2]> {
     }
 }
 
+
+impl ShaderUniform<glam::Mat4> {
+    pub fn set(&self, value: glam::Mat4) {
+        unsafe {
+            gl::UniformMatrix4fv(self.id, 1, gl::FALSE, &value.to_cols_array()[0]);
+        }
+    }
+}
+
 pub struct PlotShader {
     pub shader: ShaderProgram,
     pub vp: ShaderUniform<[f32; 2]>,
     pub offset: ShaderUniform<[f32; 2]>,
     pub pitch: ShaderUniform<[f32; 2]>,
+    pub transform: ShaderUniform<glam::Mat4>,
 }

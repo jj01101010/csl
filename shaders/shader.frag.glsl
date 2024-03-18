@@ -2,16 +2,19 @@
 
 out vec4 final_color;
 
+in vec3 outPos;
+
 uniform vec2 vp;
 uniform vec2 offset;
 uniform vec2 pitch;
 
 void main() {
 
-  float lX = gl_FragCoord.x;
-  float lY = gl_FragCoord.y;
+  // Normalize coodinates
+  float lX = (outPos.x + 1.0) / 2.0;
+  float lY = (outPos.y + 1.0) / 2.0;
 
-  float scaleFactor = 1.0;
+  float scaleFactor = 200.0;
 
   float offX = (scaleFactor * offset[0]) + lX * scaleFactor;
   float offY = (scaleFactor * offset[1]) + (1.0 - lY) * scaleFactor;
@@ -20,6 +23,6 @@ void main() {
       int(mod(offY, pitch[1])) == 0) {
     final_color = vec4(0.0, 0.0, 0.0, 0.5);
   } else {
-    final_color = vec4(lX / vp[0], lY / vp[1], 0.0, 1.0);
+    final_color = vec4(lX, lY, 0.0, 1.0);
   }
 }

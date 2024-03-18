@@ -14,3 +14,5 @@ bytemuck = "1"
 glfw = "0.55.0"
 imagine = "0.0.5"
 gl = "0.14.0"
+glam = "0.25.0"
+
