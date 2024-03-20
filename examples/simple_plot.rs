@@ -1,9 +1,6 @@
 use std::f32::consts::PI;
 
-use csl::plot::{
-    figure::FigureProperties,
-    window::PlotWindowProperties,
-};
+use csl::plot::{figure::FigureProperties, window::PlotWindowProperties};
 
 extern crate csl;
 

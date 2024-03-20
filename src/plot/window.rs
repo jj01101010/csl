@@ -242,7 +242,6 @@ impl PlotWindow {
                 figure.render();
             }
 
-
             graph_shader.use_program();
             graph_vao.bind();
             unsafe {

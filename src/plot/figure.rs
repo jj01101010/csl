@@ -93,20 +93,16 @@ impl Figure {
             ShaderUniform::load(&shader_program, "pitch\0").unwrap();
         let transform: ShaderUniform<Mat4> =
             ShaderUniform::load(&shader_program, "transform\0").unwrap();
-        
+
         let width = match properties.width {
-            Some(w) => {
-                w
-            },
+            Some(w) => w,
             None => {
                 300.0 // TODO: Get this from window
             }
         };
 
         let height = match properties.height {
-            Some(h) => {
-                h
-            },
+            Some(h) => h,
             None => {
                 300.0 // TODO: Get this from window
             }
