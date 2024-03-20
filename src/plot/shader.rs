@@ -101,7 +101,7 @@ impl ShaderProgram {
         let program = Self::new().expect("Could not create program");
 
         shaders.iter().for_each(|shader| {
-            program.attach_shader(&shader);
+            program.attach_shader(shader);
         });
         program.link_program();
         shaders.iter().for_each(|shader| {

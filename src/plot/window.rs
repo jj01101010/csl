@@ -12,6 +12,7 @@ use super::{
 };
 
 #[cfg(debug_assertions)]
+#[allow(dead_code)]
 enum PolygonMode {
     Point = gl::POINT as isize,
     Line = gl::LINE as isize,
