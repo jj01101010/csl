@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{fs::File, io::Read, marker::PhantomData};
 
 pub enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
@@ -40,7 +40,7 @@ impl Shader {
         compiled == i32::from(gl::TRUE)
     }
 
-    pub fn info_log(&self) -> String {
+    fn info_log(&self) -> String {
         let mut needed_len = 0;
         unsafe { gl::GetShaderiv(self.id, gl::INFO_LOG_LENGTH, &mut needed_len) };
         let mut v: Vec<u8> = Vec::with_capacity(needed_len.try_into().unwrap());
@@ -57,7 +57,7 @@ impl Shader {
         String::from_utf8_lossy(&v).into_owned()
     }
 
-    pub fn delete(self) {
+    pub fn delete(&self) {
         unsafe { gl::DeleteShader(self.id) };
     }
 
@@ -73,6 +73,17 @@ impl Shader {
             Err(out)
         }
     }
+
+    pub fn from_file(ty: ShaderType, filename: &str) -> Result<Self, String> {
+        let mut file = File::open(filename).expect("Could not open shader file");
+
+        let mut buffer = String::new();
+
+        file.read_to_string(&mut buffer)
+            .expect("Could not read file");
+
+        Self::from_source(ty, buffer.as_str())
+    }
 }
 
 pub struct ShaderProgram(pub u32);
@@ -86,21 +97,41 @@ impl ShaderProgram {
         }
     }
 
-    pub fn attach_shader(&self, shader: &Shader) {
+    pub fn from_shaders(shaders: Vec<Shader>) -> Result<Self, String> {
+        let program = Self::new().expect("Could not create program");
+
+        shaders.iter().for_each(|shader| {
+            program.attach_shader(&shader);
+        });
+        program.link_program();
+        shaders.iter().for_each(|shader| {
+            shader.delete();
+        });
+
+        if program.link_success() {
+            Ok(program)
+        } else {
+            let out = format!("Program Link Error: {}", program.info_log());
+            program.delete();
+            Err(out)
+        }
+    }
+
+    fn attach_shader(&self, shader: &Shader) {
         unsafe { gl::AttachShader(self.0, shader.id) };
     }
 
-    pub fn link_program(&self) {
+    fn link_program(&self) {
         unsafe { gl::LinkProgram(self.0) };
     }
 
-    pub fn link_success(&self) -> bool {
+    fn link_success(&self) -> bool {
         let mut success = 0;
         unsafe { gl::GetProgramiv(self.0, gl::LINK_STATUS, &mut success) };
         success == i32::from(gl::TRUE)
     }
 
-    pub fn info_log(&self) -> String {
+    fn info_log(&self) -> String {
         let mut needed_len = 0;
         unsafe { gl::GetProgramiv(self.0, gl::INFO_LOG_LENGTH, &mut needed_len) };
         let mut v: Vec<u8> = Vec::with_capacity(needed_len.try_into().unwrap());

@@ -17,13 +17,13 @@ impl VertexArray {
         }
     }
 
-    pub fn bind(&self) {
+    pub(crate) fn bind(&self) {
         unsafe {
             gl::BindVertexArray(self.id);
         }
     }
 
-    pub fn unbind() {
+    pub(crate) fn unbind() {
         unsafe {
             gl::BindVertexArray(0);
         }
