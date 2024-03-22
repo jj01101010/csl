@@ -28,4 +28,8 @@ impl VertexArray {
             gl::BindVertexArray(0);
         }
     }
+
+    pub fn delete(&self) {
+        unsafe { gl::DeleteVertexArrays(1, &self.id) }
+    }
 }

@@ -1,6 +1,6 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, iter::zip};
 
-use csl::plot::{figure::FigureProperties, window::PlotWindowProperties};
+use csl::plot::{figure::{Figure, FigureProperties}, graph::{Graph, Point}, window::PlotWindowProperties};
 
 extern crate csl;
 
@@ -29,6 +29,7 @@ fn main() {
     let x = (0..=100).map(|x| (x as f32) / 100.0);
 
     let y = x.clone().map(|x| f32::sin(2.0 * PI * x));
+    let points: Vec<Point> = zip(x, y).map(|(x, y)| [x, y]).collect();
 
     let mut window = csl::plot::window::PlotWindow::new(PlotWindowProperties {
         width: 300,
@@ -37,12 +38,27 @@ fn main() {
         ..Default::default()
     });
 
-    window.create_figure(FigureProperties::default());
+    let mut graph = Graph::new(points);
+
+    graph.add_animation(|_| {
+        None
+    });
+
+    let mut figure = Figure::new(FigureProperties {
+        ..Default::default()
+    });
+
+    figure.add_plot(graph);
+
+    window.figures.push(figure);
 
     /*figure.plot(x, y, PlotPropperties {
         more_properties: "Plot title",
         ..Default::default()
     })*/
 
-    window.run(x, y);
+    //figure.plot(x, y);
+    //figure.borrow_mut().plot();
+
+    window.run();
 }

@@ -7,7 +7,7 @@ pub enum BufferType {
 }
 
 pub struct Buffer {
-    id: u32,
+    pub id: u32,
 }
 
 impl Buffer {
@@ -41,6 +41,12 @@ impl Buffer {
                 data.as_ptr().cast(),
                 usage,
             );
+        }
+    }
+
+    pub fn delete(&self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.id);
         }
     }
 }

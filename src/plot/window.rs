@@ -1,15 +1,6 @@
-use std::{iter::zip, mem::size_of, rc::Rc};
-
-use glam::{Mat4, Vec3};
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, MouseButton, PWindow, WindowEvent};
 
-use super::{
-    buffer::{Buffer, BufferType},
-    figure::{Figure, FigureProperties},
-    graph::{Graph, Point},
-    shader::{Shader, ShaderProgram, ShaderType, ShaderUniform},
-    vao::VertexArray,
-};
+use super::figure::Figure;
 
 #[cfg(debug_assertions)]
 #[allow(dead_code)]
@@ -51,11 +42,14 @@ impl Default for PlotWindowProperties {
 
 pub struct PlotWindow {
     plot_context: GLFWPlotContext,
-    figures: Vec<Rc<Figure>>,
+    pub figures: Vec<Figure>,
 }
 
 impl PlotWindow {
     pub fn new(properties: PlotWindowProperties) -> Self {
+        ::std::env::set_var("RUST_LOG", "trace");
+        env_logger::init();
+
         let mut glfw = glfw::init(fail_on_errors!()).unwrap();
         glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
         glfw.window_hint(glfw::WindowHint::OpenGlProfile(
@@ -99,65 +93,12 @@ impl PlotWindow {
         }
     }
 
-    pub fn create_figure(&mut self, props: FigureProperties) -> Rc<Figure> {
-        let figure = Rc::new(Figure::new(props));
-        self.figures.push(figure.clone());
-        figure
-    }
-
-    pub fn run(&mut self, x: impl Iterator<Item = f32>, y: impl Iterator<Item = f32>) {
+    pub fn run(&mut self) {
         #[cfg(debug_assertions)]
         polygon_mode(PolygonMode::Fill);
 
-        let points: Vec<Point> = zip(x, y).map(|(x, y)| [x, y]).collect();
-
-        let graph = Graph::new(points.into_boxed_slice());
-
-        let graph_vao = VertexArray::new().expect("Could not create VAO");
-        graph_vao.bind();
-
-        let graph_vbo = Buffer::new().expect("Could not create VBO");
-        graph_vbo.bind(BufferType::Array);
-        Buffer::buffer_data(
-            BufferType::Array,
-            bytemuck::cast_slice(&graph.data),
-            gl::STATIC_DRAW,
-        );
-
-        unsafe {
-            gl::VertexAttribPointer(
-                0,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                size_of::<Point>().try_into().unwrap(),
-                std::ptr::null(),
-            );
-            gl::EnableVertexAttribArray(0);
-        }
-
-        VertexArray::unbind();
-        Buffer::unbind(BufferType::Array);
-
-        let mut proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
-
-        let mut translation = glam::Mat4::from_translation(Vec3::new(150.0, 150.0, 0.0))
-            * glam::Mat4::from_scale(Vec3::new(150.0, 150.0, 1.0));
-
-        let graph_shader = ShaderProgram::from_shaders(vec![
-            Shader::from_file(ShaderType::Vertex, "shaders/shader_graph.vert.glsl").unwrap(),
-            Shader::from_file(ShaderType::Fragment, "shaders/shader_graph.frag.glsl").unwrap(),
-        ])
-        .unwrap();
-
-        let graph_transform_uniform: ShaderUniform<Mat4> =
-            ShaderUniform::load(&graph_shader, "transform\0").expect("Could not load transform");
-
         let mut off_x = 0.0;
         let mut off_y = 0.0;
-
-        graph_shader.use_program();
-        graph_transform_uniform.set(proj * translation);
 
         let mut init_pos: Option<[f32; 2]> = None;
 
@@ -180,7 +121,7 @@ impl PlotWindow {
                         unsafe {
                             gl::Viewport(0, 0, w, h);
                         }
-                        translation = glam::Mat4::from_translation(Vec3::new(
+                        /*translation = glam::Mat4::from_translation(Vec3::new(
                             w as f32 / 2.0,
                             h as f32 / 2.0,
                             0.0,
@@ -196,6 +137,7 @@ impl PlotWindow {
                         //plot_shader.transform.set(proj * translation);
                         graph_shader.use_program();
                         graph_transform_uniform.set(proj * translation);
+                        */
 
                         let pos = self.plot_context.window.get_pos();
                         self.plot_context.window.set_pos(pos.0 + 1, pos.1);
@@ -242,15 +184,8 @@ impl PlotWindow {
                 figure.render();
             }
 
-            graph_shader.use_program();
-            graph_vao.bind();
-            unsafe {
-                gl::DrawArrays(gl::LINE_STRIP, 0, graph.data.len() as i32);
-            }
-
             // Swap front and back buffers
             self.plot_context.window.swap_buffers();
         }
-        //plot_shader.shader.delete();
     }
 }

@@ -1,5 +1,7 @@
 use std::{fs::File, io::Read, marker::PhantomData};
 
+use log::warn;
+
 pub enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
     Fragment = gl::FRAGMENT_SHADER as isize,
@@ -152,7 +154,7 @@ impl ShaderProgram {
         unsafe { gl::UseProgram(self.0) };
     }
 
-    pub fn delete(self) {
+    pub fn delete(&self) {
         unsafe { gl::DeleteProgram(self.0) };
     }
 
@@ -183,18 +185,20 @@ pub struct ShaderUniform<T> {
 }
 
 impl<T> ShaderUniform<T> {
-    pub fn load(program: &ShaderProgram, name: &str) -> Option<Self> {
+    pub fn load(program: &ShaderProgram, name: &str) -> Self {
         let id;
+        // OpenGL needs 0 terminated strings
+        let null_name = name.to_owned() + "\0";
         unsafe {
-            id = gl::GetUniformLocation(program.0, name.as_ptr().cast());
+            id = gl::GetUniformLocation(program.0, null_name.as_ptr().cast());
         }
-        if id != -1 {
-            Some(Self {
-                id,
-                phantom: PhantomData,
-            })
-        } else {
-            None
+        if id == -1 {
+            warn!("Could not find uniform variable '{name}'. This might be due to an optimization from GLSL.");
+        }
+        // OpenGL ignores every id wi
+        Self {
+            id,
+            phantom: PhantomData,
         }
     }
 }
