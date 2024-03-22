@@ -140,6 +140,12 @@ impl Figure {
         self.graphs.push(graph);
     }
 
+    pub fn update(&mut self) {
+        for graph in &mut self.graphs {
+            graph.run_animation();
+        }
+    }
+
     pub fn render(&mut self) {
         self.plot_shader.shader.use_program();
 
@@ -160,15 +166,6 @@ impl Figure {
 
         for graph in &mut self.graphs {
             graph.render();
-            let new_data = graph.anim.unwrap()(&graph.data);
-            match new_data {
-                None => {
-
-                },
-                Some(data) => {
-                    graph.data = data;
-                }
-            }
         }
     }
 }

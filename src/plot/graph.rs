@@ -15,15 +15,22 @@ struct GraphShader {
     pub transform_uniform: ShaderUniform<Mat4>,
 }
 
+pub type AnimationCallback = fn(&mut Vec<Point>) -> ();
+
+#[derive(Default)]
+pub struct GraphProperties {
+    pub anim: Option<AnimationCallback>
+}
+
 pub struct Graph {
     pub data: Vec<Point>,
     graph_vao: VertexArray,
     graph_shader: GraphShader,
-    pub anim: Option<fn(&Vec<Point>) -> Option<Vec<Point>>>
+    pub properties: GraphProperties,
 }
 
 impl Graph {
-    pub fn new(data: Vec<Point>) -> Self {
+    pub fn new(data: Vec<Point>, properties: GraphProperties) -> Self {
         let graph_vao = VertexArray::new().expect("Could not create VAO");
         graph_vao.bind();
 
@@ -66,12 +73,8 @@ impl Graph {
                 shader: graph_shader,
                 transform_uniform: graph_transform_uniform,
             },
-            anim: None
+            properties
         }
-    }
-
-    pub fn add_animation(&mut self, anim: fn(&Vec<Point>) -> Option<Vec<Point>>) {
-        self.anim = Some(anim);
     }
 
     pub fn render(&self) {
@@ -89,6 +92,11 @@ impl Graph {
         unsafe {
             gl::DrawArrays(gl::LINE_STRIP, 0, self.data.len() as i32);
         }
+    }
 
+    pub fn run_animation(&mut self) {
+        if let Some(animation) = self.properties.anim {
+            animation(&mut self.data);
+        }
     }
 }

@@ -42,7 +42,7 @@ impl Default for PlotWindowProperties {
 
 pub struct PlotWindow {
     plot_context: GLFWPlotContext,
-    pub figures: Vec<Figure>,
+    figures: Vec<Figure>,
 }
 
 impl PlotWindow {
@@ -187,5 +187,9 @@ impl PlotWindow {
             // Swap front and back buffers
             self.plot_context.window.swap_buffers();
         }
+    }
+
+    pub fn add_figure(&mut self, figure: Figure) {
+        self.figures.push(figure);
     }
 }
