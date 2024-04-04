@@ -29,7 +29,7 @@ impl<const N: usize> RungeKutta4<N> {
 
 impl<const N: usize> RungeKutta4<N> {
     fn calc_kj(&self, j: usize, fun: &SolveFun<Vector<N>>, delta_time: f32) -> Vector<N> {
-        let mut inner_sum = Vector { data: [0.0; N] };
+        let mut inner_sum = Vector { data: [[0.0]; N] };
 
         for l in 0..4 {
             if A_IJ[j][l] == 0.0 {
@@ -45,7 +45,7 @@ impl<const N: usize> RungeKutta4<N> {
     }
 
     pub fn next_step(&mut self, fun: &SolveFun<Vector<N>>, delta_time: f32) -> &Vector<N> {
-        let mut sum = Vector { data: [0.0; N] };
+        let mut sum = Vector { data: [[0.0]; N] };
         for (j, b_j) in B_J.iter().enumerate() {
             sum = sum + *b_j * self.calc_kj(j, fun, delta_time);
         }

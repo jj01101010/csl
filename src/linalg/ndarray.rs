@@ -1,14 +1,11 @@
-use std::ops::{Add, AddAssign, Index, Mul, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Index, IndexMut, Mul};
 
 #[derive(Clone, Copy)]
 pub struct Matrix<const M: usize, const N: usize> {
     pub data: [[f32; N]; M], // TODO: This needs to be generalized with Ndarray<Ndarray, 1>
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct Vector<const N: usize> {
-    pub data: [f32; N],
-}
+pub type Vector<const N: usize> = Matrix<N, 1>;
 
 impl<const L: usize, const M: usize, const N: usize> Mul<Matrix<M, N>> for Matrix<L, M> {
     type Output = Matrix<L, N>;
@@ -29,67 +26,49 @@ impl<const L: usize, const M: usize, const N: usize> Mul<Matrix<M, N>> for Matri
     }
 }
 
-impl<const M: usize, const N: usize> Mul<Vector<M>> for Matrix<N, M> {
-    type Output = Vector<M>;
-    fn mul(self, rhs: Vector<M>) -> Self::Output {
-        let mut output = [0.0; M];
+impl<const M: usize, const N: usize> Add for Matrix<M, N> {
+    type Output = Matrix<M, N>;
+    fn add(mut self, rhs: Self) -> Self::Output {
         for i in 0..M {
-            let mut sum = 0.0;
             for j in 0..N {
-                sum += self.data[i][j] * rhs.data[j];
+                self[(i, j)] += rhs[(i, j)];
             }
-            output[i] = sum;
         }
-        Vector { data: output }
+        self
     }
 }
 
-impl<const N: usize> Add<Vector<N>> for Vector<N> {
-    type Output = Vector<N>;
-    fn add(self, rhs: Vector<N>) -> Self::Output {
-        let mut out = [0.0; N];
-        for i in 0..N {
-            out[i] = self.data[i] + rhs.data[i];
-        }
-        Vector { data: out }
-    }
-}
-
-impl<const N: usize> AddAssign<Vector<N>> for Vector<N> {
-    fn add_assign(&mut self, rhs: Vector<N>) {
-        for i in 0..N {
-            self.data[i] += rhs.data[i];
+impl<const M: usize, const N: usize> AddAssign for Matrix<M, N> {
+    fn add_assign(&mut self, rhs: Self) {
+        for i in 0..M {
+            for j in 0..N {
+                self[(i, j)] += rhs[(i, j)];
+            }
         }
     }
 }
 
-impl<const N: usize> Sub<Vector<N>> for Vector<N> {
-    type Output = Vector<N>;
-    fn sub(self, rhs: Vector<N>) -> Self::Output {
-        let mut out = [0.0; N];
-        for i in 0..N {
-            out[i] = self.data[i] - rhs.data[i];
+impl<const M: usize, const N: usize> Mul<Matrix<M, N>> for f32 {
+    type Output = Matrix<M, N>;
+    fn mul(self, mut rhs: Matrix<M, N>) -> Matrix<M, N> {
+        for i in 0..M {
+            for j in 0..N {
+                rhs[(i, j)] *= self;
+            }
         }
-        Vector { data: out }
+        rhs
     }
 }
 
-impl<const N: usize> SubAssign<Vector<N>> for Vector<N> {
-    fn sub_assign(&mut self, rhs: Vector<N>) {
-        for i in 0..N {
-            self.data[i] -= rhs.data[i];
+impl<const M: usize, const N: usize> Mul<f32> for Matrix<M, N> {
+    type Output = Matrix<M, N>;
+    fn mul(mut self, rhs: f32) -> Matrix<M, N> {
+        for i in 0..M {
+            for j in 0..N {
+                self[(i, j)] *= rhs;
+            }
         }
-    }
-}
-
-impl<const N: usize> Mul<Vector<N>> for f32 {
-    type Output = Vector<N>;
-    fn mul(self, rhs: Vector<N>) -> Self::Output {
-        let mut out = [0.0; N];
-        for i in 0..N {
-            out[i] = self * rhs.data[i];
-        }
-        Vector { data: out }
+        self
     }
 }
 
@@ -103,6 +82,26 @@ impl<const M: usize, const N: usize> Index<(usize, usize)> for Matrix<M, N> {
 impl<const N: usize> Index<usize> for Vector<N> {
     type Output = f32;
     fn index(&self, index: usize) -> &Self::Output {
-        &self.data[index]
+        &self.data[index][0]
+    }
+}
+
+impl<const N: usize> IndexMut<usize> for Vector<N> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.data[index][1]
+    }
+}
+
+impl<const M: usize, const N: usize> IndexMut<(usize, usize)> for Matrix<M, N> {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        &mut self.data[index.0][index.1]
+    }
+}
+
+impl<const N: usize> From<[f32; N]> for Vector<N> {
+    fn from(value: [f32; N]) -> Self {
+        Self {
+            data: value.map(|val| [val]),
+        }
     }
 }

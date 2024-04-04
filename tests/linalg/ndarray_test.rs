@@ -63,11 +63,11 @@ fn vector_multiplication_test() {
     };
 
     let out_vec = Vector {
-        data: [30.0, 70.0, 110.0, 150.0],
+        data: [[30.0], [70.0], [110.0], [150.0]],
     };
 
     let v = Vector {
-        data: [1.0, 2.0, 3.0, 4.0],
+        data: [[1.0], [2.0], [3.0], [4.0]],
     };
 
     let c = a * v;
