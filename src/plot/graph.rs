@@ -17,9 +17,18 @@ struct GraphShader {
 
 pub type AnimationCallback = fn(&mut Vec<Point>) -> ();
 
-#[derive(Default)]
 pub struct GraphProperties {
-    pub anim: Option<AnimationCallback>
+    pub anim: Option<AnimationCallback>,
+    pub zindex: u32,
+}
+
+impl Default for GraphProperties {
+    fn default() -> Self {
+        Self {
+            anim: None,
+            zindex: 1,
+        }
+    }
 }
 
 pub struct Graph {
@@ -73,20 +82,21 @@ impl Graph {
                 shader: graph_shader,
                 transform_uniform: graph_transform_uniform,
             },
-            properties
+            properties,
         }
     }
 
     pub fn render(&self) {
         let proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
 
-        let translation = glam::Mat4::from_translation(Vec3::new(150.0, 150.0, 0.0))
-            * glam::Mat4::from_scale(Vec3::new(150.0, 150.0, 1.0));
-
+        let translation = glam::Mat4::from_translation(Vec3::new(
+            150.0,
+            150.0,
+            -1.0 * self.properties.zindex as f32,
+        )) * glam::Mat4::from_scale(Vec3::new(150.0, 150.0, 1.0));
 
         self.graph_shader.shader.use_program();
         self.graph_shader.transform_uniform.set(proj * translation);
-
 
         self.graph_vao.bind();
         unsafe {

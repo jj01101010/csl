@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Quat, Vec3};
 use log::info;
 use std::mem::size_of;
 
@@ -26,8 +26,8 @@ pub struct Figure {
     render_quad: Quad,
     plot_shader: PlotShader,
     size: [f32; 2],
-    pos: [f32; 2],
-    pub graphs: Vec<Graph>
+    pub pos: [f32; 2],
+    pub graphs: Vec<Graph>,
 }
 
 /* TODO: Add enum FigureLayout {
@@ -104,19 +104,10 @@ impl Figure {
         let pitch: ShaderUniform<[f32; 2]> = ShaderUniform::load(&shader_program, "pitch");
         let transform: ShaderUniform<Mat4> = ShaderUniform::load(&shader_program, "transform");
 
-        let width = match properties.width {
-            Some(w) => w,
-            None => {
-                300.0 // TODO: Get this from window
-            }
-        };
+        let width = properties.width.unwrap_or(300.0);
+        let height = properties.height.unwrap_or(300.0);
 
-        let height = match properties.height {
-            Some(h) => h,
-            None => {
-                300.0 // TODO: Get this from window
-            }
-        };
+        println!("{}, {}", width, height);
 
         shader_program.use_program();
         offset.set(properties.offset);
@@ -132,7 +123,7 @@ impl Figure {
             },
             pos: [width / 2.0, height / 2.0],
             size: [width, height],
-            graphs: vec![]
+            graphs: vec![],
         }
     }
 
@@ -151,10 +142,14 @@ impl Figure {
 
         // TODO: Assign these width and height parameters based on the layout of
         //  the plot window
-        let proj = glam::Mat4::orthographic_lh(0.0, self.size[0], 0.0, self.size[1], 0.01, 100.0);
+        // TODO: This should be in the window?
+        let proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
 
-        let translation = glam::Mat4::from_translation(Vec3::new(self.pos[0], self.pos[1], 0.0))
-            * glam::Mat4::from_scale(Vec3::new(self.size[0] / 2.0, self.size[1] / 2.0, 1.0));
+        let translation = glam::Mat4::from_scale_rotation_translation(
+            Vec3::new(self.size[0], self.size[1], 1.0),
+            Quat::IDENTITY,
+            Vec3::new(self.pos[0], self.pos[1], 0.0),
+        );
 
         self.plot_shader.transform.set(proj * translation);
 
@@ -183,9 +178,9 @@ type TriIndexes = [u32; 3];
 
 const VERTICES: [Vertex; 4] = [
     [1.0, 1.0, 0.0],
-    [1.0, -1.0, 0.0],
-    [-1.0, -1.0, 0.0],
-    [-1.0, 1.0, 0.0],
+    [1.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0],
 ];
 
 const INDICES: [TriIndexes; 2] = [[0, 1, 3], [1, 2, 3]];

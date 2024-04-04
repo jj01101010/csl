@@ -74,6 +74,7 @@ impl PlotWindow {
 
         unsafe {
             gl::Viewport(0, 0, properties.width as i32, properties.height as i32);
+            gl::Enable(gl::DEPTH_TEST);
         }
 
         // Make the window's context current
@@ -106,7 +107,7 @@ impl PlotWindow {
         while !self.plot_context.window.should_close() {
             unsafe {
                 gl::ClearColor(0.0, 1.0, 1.0, 1.0);
-                gl::Clear(gl::COLOR_BUFFER_BIT);
+                gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             }
 
             // Poll for and process events
