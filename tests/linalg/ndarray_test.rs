@@ -30,6 +30,28 @@ fn matrix_multiplication_test() {
 }
 
 #[test]
+fn matrix_multiplication_difference_test() {
+    let a = Matrix {
+        data: [[3.0, 2.0, 1.0], [1.0, 0.0, 2.0]],
+    };
+    let b = Matrix {
+        data: [[1.0, 2.0], [0.0, 1.0], [4.0, 0.0]],
+    };
+
+    let test_res_matrix = Matrix {
+        data: [[7.0, 8.0], [9.0, 2.0]],
+    };
+
+    let c = a * b;
+
+    for i in 0..2 {
+        for j in 0..2 {
+            assert_eq!(c[(i, j)], test_res_matrix[(i, j)]);
+        }
+    }
+}
+
+#[test]
 fn vector_multiplication_test() {
     let a = Matrix {
         data: [

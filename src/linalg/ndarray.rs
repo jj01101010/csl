@@ -1,8 +1,8 @@
 use std::ops::{Add, AddAssign, Index, Mul, Sub, SubAssign};
 
 #[derive(Clone, Copy)]
-pub struct Matrix {
-    pub data: [[f32; 4]; 4], // TODO: This needs to be generalized with Ndarray<Ndarray, 1>
+pub struct Matrix<const M: usize, const N: usize> {
+    pub data: [[f32; N]; M], // TODO: This needs to be generalized with Ndarray<Ndarray, 1>
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -10,16 +10,16 @@ pub struct Vector<const N: usize> {
     pub data: [f32; N],
 }
 
-impl Mul<Matrix> for Matrix {
-    type Output = Matrix;
-    fn mul(self, rhs: Self) -> Self::Output {
+impl<const L: usize, const M: usize, const N: usize> Mul<Matrix<M, N>> for Matrix<L, M> {
+    type Output = Matrix<L, N>;
+    fn mul(self, rhs: Matrix<M, N>) -> Self::Output {
         //TODO: THIS NEEDS TO BE REPLACED WITH A MORE SOPHISTICATED ALGORITHM
         //  to reduce O(N^3) and increase caching efficiency
-        let mut output = [[0.0; 4]; 4];
-        for i in 0..4 {
-            for k in 0..4 {
+        let mut output = [[0.0; N]; L];
+        for i in 0..L {
+            for k in 0..N {
                 let mut sum = 0.0;
-                for j in 0..4 {
+                for j in 0..M {
                     sum += self.data[i][j] * rhs.data[j][k];
                 }
                 output[i][k] = sum;
@@ -29,13 +29,13 @@ impl Mul<Matrix> for Matrix {
     }
 }
 
-impl Mul<Vector<4>> for Matrix {
-    type Output = Vector<4>;
-    fn mul(self, rhs: Vector<4>) -> Self::Output {
-        let mut output = [0.0; 4];
-        for i in 0..4 {
+impl<const M: usize, const N: usize> Mul<Vector<M>> for Matrix<N, M> {
+    type Output = Vector<M>;
+    fn mul(self, rhs: Vector<M>) -> Self::Output {
+        let mut output = [0.0; M];
+        for i in 0..M {
             let mut sum = 0.0;
-            for j in 0..4 {
+            for j in 0..N {
                 sum += self.data[i][j] * rhs.data[j];
             }
             output[i] = sum;
@@ -93,7 +93,7 @@ impl<const N: usize> Mul<Vector<N>> for f32 {
     }
 }
 
-impl Index<(usize, usize)> for Matrix {
+impl<const M: usize, const N: usize> Index<(usize, usize)> for Matrix<M, N> {
     type Output = f32;
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         &self.data[index.0][index.1]
