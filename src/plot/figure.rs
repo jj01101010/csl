@@ -2,7 +2,8 @@ use glam::{Mat4, Quat, Vec3};
 use log::info;
 use std::mem::size_of;
 
-use super::{graph::Graph, shader::PlotShader, vao::VertexArray};
+use super::{graph::Graph, graph_renderer::GraphRenderer, shader::PlotShader, vao::VertexArray};
+
 use crate::plot::{
     buffer::{Buffer, BufferType},
     shader::{Shader, ShaderProgram, ShaderType, ShaderUniform},
@@ -28,6 +29,7 @@ pub struct Figure {
     size: [f32; 2],
     pub pos: [f32; 2],
     pub graphs: Vec<Graph>,
+    graph_renderer: GraphRenderer,
 }
 
 /* TODO: Add enum FigureLayout {
@@ -124,6 +126,7 @@ impl Figure {
             pos: [width / 2.0, height / 2.0],
             size: [width, height],
             graphs: vec![],
+            graph_renderer: GraphRenderer::default(),
         }
     }
 
@@ -160,7 +163,7 @@ impl Figure {
         }
 
         for graph in &mut self.graphs {
-            graph.render();
+            self.graph_renderer.render(&graph);
         }
     }
 }

@@ -4,6 +4,7 @@ extern crate glfw;
 pub mod buffer;
 pub mod figure;
 pub mod graph;
+pub mod graph_renderer;
 pub mod shader;
 pub mod vao;
 pub mod window;
