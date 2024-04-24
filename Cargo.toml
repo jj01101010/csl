@@ -1,3 +1,4 @@
+workspace = { members = ["lib/gl"] }
 [package]
 name = "csl"
 version = "0.1.0"
@@ -13,7 +14,7 @@ path = "src/lib.rs"
 bytemuck = "1"
 glfw = "0.55.0"
 imagine = "0.0.5"
-gl = "0.14.0"
+gl = { path = "lib/gl" }
 glam = "0.25.0"
 log = "0.4.21"
 env_logger = "0.11.3"

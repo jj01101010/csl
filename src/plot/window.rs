@@ -1,7 +1,8 @@
+use gl::Gl;
 use glam::Vec2;
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, MouseButton, PWindow, WindowEvent};
 
-use super::figure::Figure;
+use super::figure::{Figure, FigureProperties};
 
 #[cfg(debug_assertions)]
 #[allow(dead_code)]
@@ -12,8 +13,8 @@ enum PolygonMode {
 }
 
 #[cfg(debug_assertions)]
-fn polygon_mode(mode: PolygonMode) {
-    unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, mode as u32) };
+fn polygon_mode(mode: PolygonMode, gl: &gl::Gl) {
+    unsafe { gl.PolygonMode(gl::FRONT_AND_BACK, mode as u32) };
 }
 
 // TODO: Turn this e.g. a trait
@@ -44,6 +45,7 @@ impl Default for PlotWindowProperties {
 pub struct PlotWindow {
     plot_context: GLFWPlotContext,
     figures: Vec<Figure>,
+    gl: Gl
 }
 
 impl PlotWindow {
@@ -71,11 +73,11 @@ impl PlotWindow {
             .expect("Failed to create GLFW window.");
 
         // Initialize OpenGL
-        gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
+        let gl: gl::Gl = gl::Gl::load_with(|ptr| window.get_proc_address(ptr) as *const _);
 
         unsafe {
-            gl::Viewport(0, 0, properties.width as i32, properties.height as i32);
-            gl::Enable(gl::DEPTH_TEST);
+            gl.Viewport(0, 0, properties.width as i32, properties.height as i32);
+            gl.Enable(gl::DEPTH_TEST);
         }
 
         // Make the window's context current
@@ -92,12 +94,13 @@ impl PlotWindow {
                 window_events: events,
             },
             figures: vec![],
+            gl
         }
     }
 
     pub fn run(&mut self) {
         #[cfg(debug_assertions)]
-        polygon_mode(PolygonMode::Fill);
+        polygon_mode(PolygonMode::Fill, &self.gl);
 
         let mut off_x = 0.0;
         let mut off_y = 0.0;
@@ -107,8 +110,8 @@ impl PlotWindow {
         // Loop until the user closes the window
         while !self.plot_context.window.should_close() {
             unsafe {
-                gl::ClearColor(0.0, 1.0, 1.0, 1.0);
-                gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+                self.gl.ClearColor(0.0, 1.0, 1.0, 1.0);
+                self.gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             }
 
             // Poll for and process events
@@ -120,7 +123,7 @@ impl PlotWindow {
                     }
                     glfw::WindowEvent::Size(w, h) => {
                         unsafe {
-                            gl::Viewport(0, 0, w, h);
+                            self.gl.Viewport(0, 0, w, h);
                         }
 
                         let pos = self.plot_context.window.get_pos();
@@ -188,7 +191,7 @@ impl PlotWindow {
         }
     }
 
-    pub fn add_figure(&mut self, figure: Figure) {
-        self.figures.push(figure);
+    pub fn add_figure(&mut self, figure_properties: FigureProperties) {
+        self.figures.push(Figure::new(self.gl.clone(), figure_properties));
     }
 }

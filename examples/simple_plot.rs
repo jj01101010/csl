@@ -1,8 +1,8 @@
 use std::{f32::consts::PI, iter::zip};
 
 use csl::plot::{
-    figure::{Figure, FigureProperties},
-    graph::{Graph, GraphProperties, Point},
+    figure::FigureProperties,
+    graph::{GraphProperties, Point},
     window::PlotWindowProperties,
 };
 
@@ -22,22 +22,16 @@ fn main() {
         ..Default::default()
     });
 
-    let graph = Graph::new(
-        points,
-        GraphProperties {
+    window.add_figure(FigureProperties {
+        graphs: vec![GraphProperties {
             anim: Some(|data| {
                 data.push([0.0, 0.0]);
             }),
+            data: points,
             ..Default::default()
-        },
-    );
-
-    let mut figure = Figure::new(FigureProperties {
+        },],
         ..Default::default()
     });
-
-    figure.add_plot(graph);
-    window.add_figure(figure);
 
     window.run();
 }

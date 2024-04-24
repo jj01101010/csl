@@ -1,8 +1,9 @@
+use gl::Gl;
 use glam::{Mat4, Quat, Vec2, Vec3};
 use log::info;
-use std::mem::size_of;
+use std::{mem::size_of, vec};
 
-use super::{graph::Graph, graph_renderer::GraphRenderer, shader::PlotShader, vao::VertexArray};
+use super::{graph::{Graph, GraphProperties}, graph_renderer::GraphRenderer, shader::PlotShader, vao::VertexArray};
 
 use crate::plot::{
     buffer::{Buffer, BufferType},
@@ -17,9 +18,9 @@ struct Quad {
 
 impl Quad {
     pub fn delete(&self) {
-        self.vbo.delete();
-        self.ebo.delete();
-        self.vao.delete();
+        //self.vbo.delete();
+        //self.ebo.delete();
+        //self.vao.delete();
     }
 }
 
@@ -31,6 +32,7 @@ pub struct Figure {
     pub graphs: Vec<Graph>,
     graph_renderer: GraphRenderer,
     offset: Vec2,
+    gl: Gl
 }
 
 /* TODO: Add enum FigureLayout {
@@ -39,15 +41,18 @@ pub struct Figure {
     None // Free layout from window
 } to FigureProperties
 */
+
 pub struct FigureProperties {
     pub width: Option<f32>,
     pub height: Option<f32>,
     pub offset: Vec2,
+    pub graphs: Vec<GraphProperties>
 }
 
 impl Default for FigureProperties {
     fn default() -> Self {
         Self {
+            graphs: vec![],
             width: None,
             height: None,
             offset: Vec2::ZERO,
@@ -56,31 +61,31 @@ impl Default for FigureProperties {
 }
 
 impl Figure {
-    pub fn new(properties: FigureProperties) -> Self {
-        let vao = VertexArray::new().unwrap();
+    pub fn new(gl: Gl, properties: FigureProperties) -> Self {
+        let vao = VertexArray::new(gl.clone()).unwrap();
         vao.bind();
 
-        let vbo = Buffer::new().expect("Could not create VBO");
+        let vbo = Buffer::new(gl.clone()).expect("Could not create VBO");
         vbo.bind(BufferType::Array);
 
         // This might be overkill, since we only render 4 vertices
-        let ebo = Buffer::new().expect("Could not create VBO");
+        let ebo = Buffer::new(gl.clone()).expect("Could not create VBO");
         ebo.bind(BufferType::ElementArray);
 
-        Buffer::buffer_data(
+        vbo.buffer_data(
             BufferType::Array,
             bytemuck::cast_slice(&VERTICES),
             gl::STATIC_DRAW,
         );
 
-        Buffer::buffer_data(
+        ebo.buffer_data(
             BufferType::ElementArray,
             bytemuck::cast_slice(&INDICES),
             gl::STATIC_DRAW,
         );
 
         unsafe {
-            gl::VertexAttribPointer(
+            gl.VertexAttribPointer(
                 0,
                 3,
                 gl::FLOAT,
@@ -88,25 +93,26 @@ impl Figure {
                 size_of::<Vertex>().try_into().unwrap(),
                 std::ptr::null(),
             );
-            gl::EnableVertexAttribArray(0);
+            gl.EnableVertexAttribArray(0);
         }
 
-        VertexArray::unbind();
-        Buffer::unbind(BufferType::Array);
-        Buffer::unbind(BufferType::ElementArray);
+        vao.unbind();
+        vbo.unbind(BufferType::Array);
+        ebo.unbind(BufferType::ElementArray);
 
-        let vert_shader = Shader::from_file(ShaderType::Vertex, "shaders/shader.vert.glsl")
+        let vert_shader = Shader::from_file(gl.clone(), ShaderType::Vertex, "shaders/shader.vert.glsl")
             .expect("Could not get shader");
-        let frag_shader = Shader::from_file(ShaderType::Fragment, "shaders/shader.frag.glsl")
+        let frag_shader = Shader::from_file(gl.clone(), ShaderType::Fragment, "shaders/shader.frag.glsl")
             .expect("Could not get shader");
 
-        let shader_program = ShaderProgram::from_shaders(vec![vert_shader, frag_shader])
+        let shader_program = ShaderProgram::from_shaders(gl.clone(), vec![vert_shader, frag_shader])
             .expect("Could not create program");
 
-        let offset: ShaderUniform<Vec2> = ShaderUniform::load(&shader_program, "offset");
-        let pitch: ShaderUniform<Vec2> = ShaderUniform::load(&shader_program, "pitch");
-        let transform: ShaderUniform<Mat4> = ShaderUniform::load(&shader_program, "transform");
+        let offset: ShaderUniform<Vec2> = ShaderUniform::load(gl.clone(), &shader_program, "offset");
+        let pitch: ShaderUniform<Vec2> = ShaderUniform::load(gl.clone(), &shader_program, "pitch");
+        let transform: ShaderUniform<Mat4> = ShaderUniform::load(gl.clone(), &shader_program, "transform");
 
+        
         let width = properties.width.unwrap_or(300.0);
         let height = properties.height.unwrap_or(300.0);
 
@@ -114,7 +120,7 @@ impl Figure {
 
         shader_program.use_program();
         pitch.set(Vec2 { x: 100.0, y: 100.0 });
-
+        
         Self {
             render_quad: Quad { vao, ebo, vbo },
             plot_shader: PlotShader {
@@ -125,9 +131,10 @@ impl Figure {
             },
             pos: [width / 2.0, height / 2.0],
             size: [width, height],
-            graphs: vec![],
+            graphs: properties.graphs.into_iter().map(|g_prop| {Graph::new(gl.clone(), g_prop)}).collect(),
             offset: properties.offset,
-            graph_renderer: GraphRenderer::default(),
+            graph_renderer: GraphRenderer::new(gl.clone()),
+            gl
         }
     }
 
@@ -171,20 +178,12 @@ impl Figure {
         self.render_quad.vao.bind();
 
         unsafe {
-            gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
+            self.gl.DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
         }
 
         for graph in &mut self.graphs {
             self.graph_renderer.render(&graph);
         }
-    }
-}
-
-impl Drop for Figure {
-    fn drop(&mut self) {
-        info!("Deleting figure!");
-        self.plot_shader.shader.delete();
-        self.render_quad.delete();
     }
 }
 

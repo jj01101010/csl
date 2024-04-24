@@ -1,17 +1,18 @@
-use gl;
+use gl::{self, Gl};
 
 pub struct VertexArray {
     pub id: u32,
+    gl: Gl
 }
 
 impl VertexArray {
-    pub fn new() -> Option<Self> {
+    pub fn new(gl: Gl) -> Option<Self> {
         let mut vao = 0;
         unsafe {
-            gl::GenVertexArrays(1, &mut vao);
+            gl.GenVertexArrays(1, &mut vao);
         }
         if vao != 0 {
-            Some(Self { id: vao })
+            Some(Self { id: vao, gl })
         } else {
             None
         }
@@ -19,17 +20,19 @@ impl VertexArray {
 
     pub(crate) fn bind(&self) {
         unsafe {
-            gl::BindVertexArray(self.id);
+            self.gl.BindVertexArray(self.id);
         }
     }
 
-    pub(crate) fn unbind() {
+    pub(crate) fn unbind(&self) {
         unsafe {
-            gl::BindVertexArray(0);
+            self.gl.BindVertexArray(0);
         }
     }
+}
 
-    pub fn delete(&self) {
-        unsafe { gl::DeleteVertexArrays(1, &self.id) }
+impl Drop for VertexArray {
+    fn drop(&mut self) {
+        //unsafe { self.gl.DeleteVertexArrays(1, &self.id) }   
     }
 }

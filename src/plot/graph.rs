@@ -1,5 +1,6 @@
 use std::mem::size_of;
 
+use gl::Gl;
 use glam::Vec3;
 
 use super::{
@@ -14,6 +15,7 @@ pub type AnimationCallback = fn(&mut Vec<Point>) -> ();
 pub struct GraphProperties {
     pub anim: Option<AnimationCallback>,
     pub zindex: u32,
+    pub data: Vec<Point>,
 }
 
 impl Default for GraphProperties {
@@ -21,6 +23,7 @@ impl Default for GraphProperties {
         Self {
             anim: None,
             zindex: 1,
+            data: vec![]
         }
     }
 }
@@ -28,25 +31,26 @@ impl Default for GraphProperties {
 pub struct Graph {
     pub data: Vec<Point>,
     pub graph_vao: VertexArray,
+    pub graph_vbo: Buffer,
     pub position: Vec3,
     pub animation: Option<AnimationCallback>,
 }
 
 impl Graph {
-    pub fn new(data: Vec<Point>, properties: GraphProperties) -> Self {
-        let graph_vao = VertexArray::new().expect("Could not create VAO");
+    pub fn new(gl: Gl, properties: GraphProperties) -> Self {
+        let graph_vao = VertexArray::new(gl.clone()).expect("Could not create VAO");
         graph_vao.bind();
 
-        let graph_vbo = Buffer::new().expect("Could not create VBO");
+        let graph_vbo = Buffer::new(gl.clone()).expect("Could not create VBO");
         graph_vbo.bind(BufferType::Array);
-        Buffer::buffer_data(
+        graph_vbo.buffer_data(
             BufferType::Array,
-            bytemuck::cast_slice(&data),
+            bytemuck::cast_slice(&properties.data),
             gl::STATIC_DRAW,
         );
 
         unsafe {
-            gl::VertexAttribPointer(
+            gl.VertexAttribPointer(
                 0,
                 2,
                 gl::FLOAT,
@@ -54,15 +58,16 @@ impl Graph {
                 size_of::<Point>().try_into().unwrap(),
                 std::ptr::null(),
             );
-            gl::EnableVertexAttribArray(0);
+            gl.EnableVertexAttribArray(0);
         }
 
-        VertexArray::unbind();
-        Buffer::unbind(BufferType::Array);
-
+        graph_vao.unbind();
+        graph_vbo.unbind(BufferType::Array);
+        
         Self {
-            data,
+            data: properties.data,
             graph_vao,
+            graph_vbo,
             animation: properties.anim,
             position: Vec3::new(150.0, 150.0, -1.0 * properties.zindex as f32),
         }

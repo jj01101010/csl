@@ -8,3 +8,4 @@ pub mod graph_renderer;
 pub mod shader;
 pub mod vao;
 pub mod window;
+pub mod figure_renderer;
