@@ -1,5 +1,6 @@
 use std::{fs::File, io::Read, marker::PhantomData};
 
+use glam::{Vec2, Vec3};
 use log::warn;
 
 pub enum ShaderType {
@@ -219,6 +220,22 @@ impl ShaderUniform<[f32; 2]> {
     }
 }
 
+impl ShaderUniform<Vec2> {
+    pub fn set(&self, value: Vec2) {
+        unsafe {
+            gl::Uniform2f(self.id, value.x, value.y);
+        }
+    }
+}
+
+impl ShaderUniform<Vec3> {
+    pub fn set(&self, value: Vec3) {
+        unsafe {
+            gl::Uniform3f(self.id, value.x, value.y, value.z);
+        }
+    }
+}
+
 impl ShaderUniform<glam::Mat4> {
     pub fn set(&self, value: glam::Mat4) {
         unsafe {
@@ -229,7 +246,7 @@ impl ShaderUniform<glam::Mat4> {
 
 pub struct PlotShader {
     pub shader: ShaderProgram,
-    pub offset: ShaderUniform<[f32; 2]>,
-    pub pitch: ShaderUniform<[f32; 2]>,
+    pub offset: ShaderUniform<Vec2>,
+    pub pitch: ShaderUniform<Vec2>,
     pub transform: ShaderUniform<glam::Mat4>,
 }

@@ -1,4 +1,4 @@
-use glam::{Mat4, Quat, Vec3};
+use glam::{Mat4, Quat, Vec2, Vec3};
 use log::info;
 use std::mem::size_of;
 
@@ -30,6 +30,7 @@ pub struct Figure {
     pub pos: [f32; 2],
     pub graphs: Vec<Graph>,
     graph_renderer: GraphRenderer,
+    offset: Vec2,
 }
 
 /* TODO: Add enum FigureLayout {
@@ -41,7 +42,7 @@ pub struct Figure {
 pub struct FigureProperties {
     pub width: Option<f32>,
     pub height: Option<f32>,
-    pub offset: [f32; 2],
+    pub offset: Vec2,
 }
 
 impl Default for FigureProperties {
@@ -49,7 +50,7 @@ impl Default for FigureProperties {
         Self {
             width: None,
             height: None,
-            offset: [0.0, 0.0],
+            offset: Vec2::ZERO,
         }
     }
 }
@@ -102,8 +103,8 @@ impl Figure {
         let shader_program = ShaderProgram::from_shaders(vec![vert_shader, frag_shader])
             .expect("Could not create program");
 
-        let offset: ShaderUniform<[f32; 2]> = ShaderUniform::load(&shader_program, "offset");
-        let pitch: ShaderUniform<[f32; 2]> = ShaderUniform::load(&shader_program, "pitch");
+        let offset: ShaderUniform<Vec2> = ShaderUniform::load(&shader_program, "offset");
+        let pitch: ShaderUniform<Vec2> = ShaderUniform::load(&shader_program, "pitch");
         let transform: ShaderUniform<Mat4> = ShaderUniform::load(&shader_program, "transform");
 
         let width = properties.width.unwrap_or(300.0);
@@ -112,8 +113,7 @@ impl Figure {
         println!("{}, {}", width, height);
 
         shader_program.use_program();
-        offset.set(properties.offset);
-        pitch.set([100.0, 100.0]);
+        pitch.set(Vec2 { x: 100.0, y: 100.0 });
 
         Self {
             render_quad: Quad { vao, ebo, vbo },
@@ -126,8 +126,19 @@ impl Figure {
             pos: [width / 2.0, height / 2.0],
             size: [width, height],
             graphs: vec![],
+            offset: properties.offset,
             graph_renderer: GraphRenderer::default(),
         }
+    }
+
+    pub fn add_offset(&mut self, d_offset: Vec2) {
+        self.offset += d_offset;
+        self.graph_renderer.offset += d_offset;
+    }
+
+    // TODO: Implement method
+    pub fn point_is_inside(&self, _point: Vec2) -> bool {
+        return true;
     }
 
     pub fn add_plot(&mut self, graph: Graph) {
@@ -155,6 +166,7 @@ impl Figure {
         );
 
         self.plot_shader.transform.set(proj * translation);
+        self.plot_shader.offset.set(self.offset);
 
         self.render_quad.vao.bind();
 

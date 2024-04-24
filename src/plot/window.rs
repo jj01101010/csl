@@ -1,3 +1,4 @@
+use glam::Vec2;
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, MouseButton, PWindow, WindowEvent};
 
 use super::figure::Figure;
@@ -101,7 +102,7 @@ impl PlotWindow {
         let mut off_x = 0.0;
         let mut off_y = 0.0;
 
-        let mut init_pos: Option<[f32; 2]> = None;
+        let mut init_pos: Option<Vec2> = None;
 
         // Loop until the user closes the window
         while !self.plot_context.window.should_close() {
@@ -118,27 +119,9 @@ impl PlotWindow {
                         self.plot_context.window.set_should_close(true)
                     }
                     glfw::WindowEvent::Size(w, h) => {
-                        //self.plot_shader.shader.use_program();
                         unsafe {
                             gl::Viewport(0, 0, w, h);
                         }
-                        /*translation = glam::Mat4::from_translation(Vec3::new(
-                            w as f32 / 2.0,
-                            h as f32 / 2.0,
-                            0.0,
-                        )) * glam::Mat4::from_scale(Vec3::new(
-                            w as f32 / 2.0,
-                            h as f32 / 2.0,
-                            1.0,
-                        ));
-                        proj =
-                            glam::Mat4::orthographic_lh(0.0, w as f32, 0.0, h as f32, 0.01, 100.0);
-
-                        //plot_shader.shader.use_program();
-                        //plot_shader.transform.set(proj * translation);
-                        graph_shader.use_program();
-                        graph_transform_uniform.set(proj * translation);
-                        */
 
                         let pos = self.plot_context.window.get_pos();
                         self.plot_context.window.set_pos(pos.0 + 1, pos.1);
@@ -155,7 +138,10 @@ impl PlotWindow {
                                         / window_size.0 as f32;
                                     let y_scaled = (c_pos.1 as f32 - window_pos.1 as f32)
                                         / window_size.1 as f32;
-                                    init_pos = Some([x_scaled + off_x, y_scaled + off_y]);
+                                    init_pos = Some(Vec2 {
+                                        x: x_scaled + off_x,
+                                        y: y_scaled + off_y,
+                                    });
                                 }
                             } else if action == Action::Release {
                                 init_pos = None;
@@ -170,11 +156,23 @@ impl PlotWindow {
                             let x_scaled = (x as f32 - window_pos.0 as f32) / window_size.0 as f32;
                             let y_scaled = (y as f32 - window_pos.1 as f32) / window_size.1 as f32;
 
+                            let last_off_x = off_x;
+                            let last_off_y = off_y;
+
                             off_x = init_pos[0] - x_scaled;
                             off_y = init_pos[1] - y_scaled;
 
-                            //plot_shader.shader.use_program();
-                            //plot_shader.offset.set([off_x, off_y]);
+                            println!("{} {}", off_x, off_y);
+
+                            for figure in &mut self.figures {
+                                if figure.point_is_inside(init_pos) {
+                                    figure.add_offset(Vec2 {
+                                        x: off_x - last_off_x,
+                                        y: last_off_y - off_y,
+                                    });
+                                    break;
+                                }
+                            }
                         }
                     }
                     _ => {}
