@@ -23,7 +23,7 @@ impl Default for GraphProperties {
         Self {
             anim: None,
             zindex: 1,
-            data: vec![]
+            data: vec![],
         }
     }
 }
@@ -63,7 +63,7 @@ impl Graph {
 
         graph_vao.unbind();
         graph_vbo.unbind(BufferType::Array);
-        
+
         Self {
             data: properties.data,
             graph_vao,

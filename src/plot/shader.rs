@@ -11,7 +11,7 @@ pub enum ShaderType {
 
 pub struct Shader {
     id: u32,
-    gl: gl::Gl
+    gl: gl::Gl,
 }
 
 impl Shader {
@@ -41,13 +41,19 @@ impl Shader {
 
     pub fn compile_success(&self) -> bool {
         let mut compiled = 0;
-        unsafe { self.gl.GetShaderiv(self.id, gl::COMPILE_STATUS, &mut compiled) };
+        unsafe {
+            self.gl
+                .GetShaderiv(self.id, gl::COMPILE_STATUS, &mut compiled)
+        };
         compiled == i32::from(gl::TRUE)
     }
 
     fn info_log(&self) -> String {
         let mut needed_len = 0;
-        unsafe { self.gl.GetShaderiv(self.id, gl::INFO_LOG_LENGTH, &mut needed_len) };
+        unsafe {
+            self.gl
+                .GetShaderiv(self.id, gl::INFO_LOG_LENGTH, &mut needed_len)
+        };
         let mut v: Vec<u8> = Vec::with_capacity(needed_len.try_into().unwrap());
         let mut len_written = 0_i32;
         unsafe {
@@ -99,7 +105,7 @@ impl ShaderProgram {
     pub fn new(gl: gl::Gl) -> Option<Self> {
         let prog = unsafe { gl.CreateProgram() };
         if prog != 0 {
-            Some(Self{id: prog, gl})
+            Some(Self { id: prog, gl })
         } else {
             None
         }
@@ -141,7 +147,10 @@ impl ShaderProgram {
 
     fn info_log(&self) -> String {
         let mut needed_len = 0;
-        unsafe { self.gl.GetProgramiv(self.id, gl::INFO_LOG_LENGTH, &mut needed_len) };
+        unsafe {
+            self.gl
+                .GetProgramiv(self.id, gl::INFO_LOG_LENGTH, &mut needed_len)
+        };
         let mut v: Vec<u8> = Vec::with_capacity(needed_len.try_into().unwrap());
         let mut len_written = 0_i32;
         unsafe {
@@ -185,9 +194,7 @@ impl ShaderProgram {
     }
 
     pub fn get_uniform_location(&self, name: &str) -> i32 {
-        unsafe {
-            self.gl.GetUniformLocation(self.id, name.as_ptr().cast())
-        }
+        unsafe { self.gl.GetUniformLocation(self.id, name.as_ptr().cast()) }
     }
 }
 
@@ -205,10 +212,9 @@ pub struct ShaderUniform<T> {
 
 impl<T> ShaderUniform<T> {
     pub fn load(gl: Gl, program: &ShaderProgram, name: &str) -> Self {
-        let id;
         // OpenGL needs 0 terminated strings
         let null_name = name.to_owned() + "\0";
-        id = program.get_uniform_location(&null_name);
+        let id = program.get_uniform_location(&null_name);
         if id == -1 {
             warn!("Could not find uniform variable '{name}'. This might be due to an optimization from GLSL.");
         }
@@ -256,14 +262,8 @@ impl ShaderUniform<Vec3> {
 impl ShaderUniform<glam::Mat4> {
     pub fn set(&self, value: glam::Mat4) {
         unsafe {
-            self.gl.UniformMatrix4fv(self.id, 1, gl::FALSE, &value.to_cols_array()[0]);
+            self.gl
+                .UniformMatrix4fv(self.id, 1, gl::FALSE, &value.to_cols_array()[0]);
         }
     }
-}
-
-pub struct PlotShader {
-    pub shader: ShaderProgram,
-    pub offset: ShaderUniform<Vec2>,
-    pub pitch: ShaderUniform<Vec2>,
-    pub transform: ShaderUniform<glam::Mat4>,
 }

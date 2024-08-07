@@ -2,7 +2,7 @@ use gl::{self, Gl};
 
 pub struct VertexArray {
     pub id: u32,
-    gl: Gl
+    gl: Gl,
 }
 
 impl VertexArray {
@@ -33,6 +33,6 @@ impl VertexArray {
 
 impl Drop for VertexArray {
     fn drop(&mut self) {
-        //unsafe { self.gl.DeleteVertexArrays(1, &self.id) }   
+        unsafe { self.gl.DeleteVertexArrays(1, &self.id) }
     }
 }

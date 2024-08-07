@@ -2,7 +2,11 @@ use gl::Gl;
 use glam::Vec2;
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, MouseButton, PWindow, WindowEvent};
 
-use super::figure::{Figure, FigureProperties};
+use super::{
+    figure::{Figure, FigureProperties},
+    figure_renderer::FigureRenderer,
+    graph_renderer::GraphRenderer,
+};
 
 #[cfg(debug_assertions)]
 #[allow(dead_code)]
@@ -45,7 +49,9 @@ impl Default for PlotWindowProperties {
 pub struct PlotWindow {
     plot_context: GLFWPlotContext,
     figures: Vec<Figure>,
-    gl: Gl
+    gl: Gl,
+    figure_renderer: FigureRenderer,
+    graph_renderer: GraphRenderer,
 }
 
 impl PlotWindow {
@@ -87,6 +93,9 @@ impl PlotWindow {
         window.set_cursor_pos_polling(true);
         window.set_mouse_button_polling(true);
 
+        let figure_renderer = FigureRenderer::new(gl.clone());
+        let graph_renderer = GraphRenderer::new(gl.clone());
+
         Self {
             plot_context: GLFWPlotContext {
                 window,
@@ -94,7 +103,9 @@ impl PlotWindow {
                 window_events: events,
             },
             figures: vec![],
-            gl
+            graph_renderer,
+            figure_renderer,
+            gl,
         }
     }
 
@@ -182,8 +193,11 @@ impl PlotWindow {
                 }
             }
 
-            for figure in &mut self.figures {
-                figure.render();
+            for figure in &self.figures {
+                self.figure_renderer.render(figure);
+                for graph in &figure.graphs {
+                    self.graph_renderer.render(graph);
+                }
             }
 
             // Swap front and back buffers
@@ -192,6 +206,7 @@ impl PlotWindow {
     }
 
     pub fn add_figure(&mut self, figure_properties: FigureProperties) {
-        self.figures.push(Figure::new(self.gl.clone(), figure_properties));
+        self.figures
+            .push(Figure::new(self.gl.clone(), figure_properties));
     }
 }

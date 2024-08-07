@@ -15,15 +15,28 @@ pub struct GraphRenderer {
     graph_shader: GraphShader,
     proj_matrix: glam::Mat4,
     pub offset: glam::Vec2,
-    gl: gl::Gl
+    gl: gl::Gl,
 }
 
 impl GraphRenderer {
     pub fn new(gl: gl::Gl) -> Self {
-        let graph_shader = ShaderProgram::from_shaders(gl.clone(), vec![
-            Shader::from_file(gl.clone(), ShaderType::Vertex, "shaders/shader_graph.vert.glsl").unwrap(),
-            Shader::from_file(gl.clone(), ShaderType::Fragment, "shaders/shader_graph.frag.glsl").unwrap(),
-        ])
+        let graph_shader = ShaderProgram::from_shaders(
+            gl.clone(),
+            vec![
+                Shader::from_file(
+                    gl.clone(),
+                    ShaderType::Vertex,
+                    "shaders/shader_graph.vert.glsl",
+                )
+                .unwrap(),
+                Shader::from_file(
+                    gl.clone(),
+                    ShaderType::Fragment,
+                    "shaders/shader_graph.frag.glsl",
+                )
+                .unwrap(),
+            ],
+        )
         .unwrap();
 
         let graph_transform_uniform: ShaderUniform<Mat4> =
@@ -41,7 +54,7 @@ impl GraphRenderer {
             },
             proj_matrix: proj,
             offset: glam::Vec2::ZERO,
-            gl
+            gl,
         }
     }
 
@@ -60,7 +73,8 @@ impl GraphRenderer {
             .set(self.proj_matrix * translation);
 
         unsafe {
-            self.gl.DrawArrays(gl::LINE_STRIP, 0, graph.data.len() as i32);
+            self.gl
+                .DrawArrays(gl::LINE_STRIP, 0, graph.data.len() as i32);
         }
     }
 }

@@ -8,10 +8,11 @@ pub enum BufferType {
 
 pub struct Buffer {
     pub id: u32,
-    gl: gl::Gl
+    gl: gl::Gl,
 }
 
 impl Buffer {
+    /// Create a new Buffer object
     pub fn new(gl: gl::Gl) -> Option<Self> {
         let mut vbo = 0;
         unsafe {
@@ -34,6 +35,7 @@ impl Buffer {
         unsafe { self.gl.BindBuffer(ty as u32, 0) }
     }
 
+    /// Copy the data into the buffer object
     pub fn buffer_data(&self, ty: BufferType, data: &[u8], usage: u32) {
         unsafe {
             self.gl.BufferData(
@@ -48,8 +50,6 @@ impl Buffer {
 
 impl Drop for Buffer {
     fn drop(&mut self) {
-        unsafe {
-            self.gl.DeleteBuffers(1, &self.id)
-        }
+        unsafe { self.gl.DeleteBuffers(1, &self.id) }
     }
 }

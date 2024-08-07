@@ -1,38 +1,39 @@
 use gl::Gl;
-use glam::{Mat4, Quat, Vec2, Vec3};
-use log::info;
+use glam::Vec2;
 use std::{mem::size_of, vec};
 
-use super::{graph::{Graph, GraphProperties}, graph_renderer::GraphRenderer, shader::PlotShader, vao::VertexArray};
-
-use crate::plot::{
-    buffer::{Buffer, BufferType},
-    shader::{Shader, ShaderProgram, ShaderType, ShaderUniform},
+use super::{
+    graph::{Graph, GraphProperties},
+    graph_renderer::GraphRenderer,
+    vao::VertexArray,
 };
 
-struct Quad {
+use crate::plot::buffer::{Buffer, BufferType};
+
+pub struct Quad {
     vao: VertexArray,
-    vbo: Buffer,
-    ebo: Buffer,
+    _vbo: Buffer,
+    _ebo: Buffer,
 }
 
 impl Quad {
-    pub fn delete(&self) {
-        //self.vbo.delete();
-        //self.ebo.delete();
-        //self.vao.delete();
+    pub fn bind(&self) {
+        self.vao.bind()
+    }
+
+    pub fn unbind(&self) {
+        self.vao.unbind()
     }
 }
 
 pub struct Figure {
-    render_quad: Quad,
-    plot_shader: PlotShader,
-    size: [f32; 2],
+    pub render_quad: Quad,
+    //plot_shader: PlotShader,
+    pub size: [f32; 2],
     pub pos: [f32; 2],
     pub graphs: Vec<Graph>,
     graph_renderer: GraphRenderer,
-    offset: Vec2,
-    gl: Gl
+    pub offset: Vec2,
 }
 
 /* TODO: Add enum FigureLayout {
@@ -46,7 +47,7 @@ pub struct FigureProperties {
     pub width: Option<f32>,
     pub height: Option<f32>,
     pub offset: Vec2,
-    pub graphs: Vec<GraphProperties>
+    pub graphs: Vec<GraphProperties>,
 }
 
 impl Default for FigureProperties {
@@ -100,41 +101,24 @@ impl Figure {
         vbo.unbind(BufferType::Array);
         ebo.unbind(BufferType::ElementArray);
 
-        let vert_shader = Shader::from_file(gl.clone(), ShaderType::Vertex, "shaders/shader.vert.glsl")
-            .expect("Could not get shader");
-        let frag_shader = Shader::from_file(gl.clone(), ShaderType::Fragment, "shaders/shader.frag.glsl")
-            .expect("Could not get shader");
-
-        let shader_program = ShaderProgram::from_shaders(gl.clone(), vec![vert_shader, frag_shader])
-            .expect("Could not create program");
-
-        let offset: ShaderUniform<Vec2> = ShaderUniform::load(gl.clone(), &shader_program, "offset");
-        let pitch: ShaderUniform<Vec2> = ShaderUniform::load(gl.clone(), &shader_program, "pitch");
-        let transform: ShaderUniform<Mat4> = ShaderUniform::load(gl.clone(), &shader_program, "transform");
-
-        
         let width = properties.width.unwrap_or(300.0);
         let height = properties.height.unwrap_or(300.0);
 
-        println!("{}, {}", width, height);
-
-        shader_program.use_program();
-        pitch.set(Vec2 { x: 100.0, y: 100.0 });
-        
         Self {
-            render_quad: Quad { vao, ebo, vbo },
-            plot_shader: PlotShader {
-                shader: shader_program,
-                offset,
-                pitch,
-                transform,
+            render_quad: Quad {
+                vao,
+                _ebo: ebo,
+                _vbo: vbo,
             },
             pos: [width / 2.0, height / 2.0],
             size: [width, height],
-            graphs: properties.graphs.into_iter().map(|g_prop| {Graph::new(gl.clone(), g_prop)}).collect(),
+            graphs: properties
+                .graphs
+                .into_iter()
+                .map(|g_prop| Graph::new(gl.clone(), g_prop))
+                .collect(),
             offset: properties.offset,
-            graph_renderer: GraphRenderer::new(gl.clone()),
-            gl
+            graph_renderer: GraphRenderer::new(gl),
         }
     }
 
@@ -145,7 +129,7 @@ impl Figure {
 
     // TODO: Implement method
     pub fn point_is_inside(&self, _point: Vec2) -> bool {
-        return true;
+        true
     }
 
     pub fn add_plot(&mut self, graph: Graph) {
@@ -155,34 +139,6 @@ impl Figure {
     pub fn update(&mut self) {
         for graph in &mut self.graphs {
             graph.run_animation();
-        }
-    }
-
-    pub fn render(&mut self) {
-        self.plot_shader.shader.use_program();
-
-        // TODO: Assign these width and height parameters based on the layout of
-        //  the plot window
-        // TODO: This should be in the window?
-        let proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
-
-        let translation = glam::Mat4::from_scale_rotation_translation(
-            Vec3::new(self.size[0], self.size[1], 1.0),
-            Quat::IDENTITY,
-            Vec3::new(self.pos[0], self.pos[1], 0.0),
-        );
-
-        self.plot_shader.transform.set(proj * translation);
-        self.plot_shader.offset.set(self.offset);
-
-        self.render_quad.vao.bind();
-
-        unsafe {
-            self.gl.DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, std::ptr::null());
-        }
-
-        for graph in &mut self.graphs {
-            self.graph_renderer.render(&graph);
         }
     }
 }

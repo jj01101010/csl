@@ -29,7 +29,7 @@ fn main() {
             }),
             data: points,
             ..Default::default()
-        },],
+        }],
         ..Default::default()
     });
 

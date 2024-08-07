@@ -35,7 +35,7 @@ impl<const N: usize> RungeKutta4<N> {
             if A_IJ[j][l] == 0.0 {
                 continue;
             }
-            inner_sum = inner_sum + A_IJ[j][l] * self.calc_kj(l, fun, delta_time);
+            inner_sum += A_IJ[j][l] * self.calc_kj(l, fun, delta_time);
         }
 
         fun(
@@ -47,7 +47,7 @@ impl<const N: usize> RungeKutta4<N> {
     pub fn next_step(&mut self, fun: &SolveFun<Vector<N>>, delta_time: f32) -> &Vector<N> {
         let mut sum = Vector { data: [[0.0]; N] };
         for (j, b_j) in B_J.iter().enumerate() {
-            sum = sum + *b_j * self.calc_kj(j, fun, delta_time);
+            sum += *b_j * self.calc_kj(j, fun, delta_time);
         }
 
         self.time += delta_time;
