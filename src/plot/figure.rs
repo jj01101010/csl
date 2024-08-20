@@ -4,7 +4,6 @@ use std::{mem::size_of, vec};
 
 use super::{
     graph::{Graph, GraphProperties},
-    graph_renderer::GraphRenderer,
     vao::VertexArray,
 };
 
@@ -17,52 +16,7 @@ pub struct Quad {
 }
 
 impl Quad {
-    pub fn bind(&self) {
-        self.vao.bind()
-    }
-
-    pub fn unbind(&self) {
-        self.vao.unbind()
-    }
-}
-
-pub struct Figure {
-    pub render_quad: Quad,
-    //plot_shader: PlotShader,
-    pub size: [f32; 2],
-    pub pos: [f32; 2],
-    pub graphs: Vec<Graph>,
-    graph_renderer: GraphRenderer,
-    pub offset: Vec2,
-}
-
-/* TODO: Add enum FigureLayout {
-    Manual(w, h),
-    Aspect(aspect),
-    None // Free layout from window
-} to FigureProperties
-*/
-
-pub struct FigureProperties {
-    pub width: Option<f32>,
-    pub height: Option<f32>,
-    pub offset: Vec2,
-    pub graphs: Vec<GraphProperties>,
-}
-
-impl Default for FigureProperties {
-    fn default() -> Self {
-        Self {
-            graphs: vec![],
-            width: None,
-            height: None,
-            offset: Vec2::ZERO,
-        }
-    }
-}
-
-impl Figure {
-    pub fn new(gl: Gl, properties: FigureProperties) -> Self {
+    pub fn new(gl: &Gl) -> Self {
         let vao = VertexArray::new(gl.clone()).unwrap();
         vao.bind();
 
@@ -101,15 +55,62 @@ impl Figure {
         vbo.unbind(BufferType::Array);
         ebo.unbind(BufferType::ElementArray);
 
+        Self {
+            vao: vao,
+            _vbo: vbo,
+            _ebo: ebo,
+        }
+    }
+
+    pub fn bind(&self) {
+        self.vao.bind()
+    }
+
+    pub fn unbind(&self) {
+        self.vao.unbind()
+    }
+}
+
+pub struct Figure {
+    pub render_quad: Quad,
+    pub size: [f32; 2],
+    pub pos: [f32; 2],
+    pub graphs: Vec<Graph>,
+    pub offset: Vec2,
+}
+
+/* TODO: Add enum FigureLayout {
+    Manual(w, h),
+    Aspect(aspect),
+    None // Free layout from window
+} to FigureProperties
+*/
+
+pub struct FigureProperties {
+    pub width: Option<f32>,
+    pub height: Option<f32>,
+    pub offset: Vec2,
+    pub graphs: Vec<GraphProperties>,
+}
+
+impl Default for FigureProperties {
+    fn default() -> Self {
+        Self {
+            graphs: vec![],
+            width: None,
+            height: None,
+            offset: Vec2::ZERO,
+        }
+    }
+}
+
+impl Figure {
+    pub fn new(gl: Gl, properties: FigureProperties) -> Self {
         let width = properties.width.unwrap_or(300.0);
         let height = properties.height.unwrap_or(300.0);
 
         Self {
-            render_quad: Quad {
-                vao,
-                _ebo: ebo,
-                _vbo: vbo,
-            },
+            render_quad: Quad::new(&gl),
             pos: [width / 2.0, height / 2.0],
             size: [width, height],
             graphs: properties
@@ -118,13 +119,12 @@ impl Figure {
                 .map(|g_prop| Graph::new(gl.clone(), g_prop))
                 .collect(),
             offset: properties.offset,
-            graph_renderer: GraphRenderer::new(gl),
         }
     }
 
     pub fn add_offset(&mut self, d_offset: Vec2) {
         self.offset += d_offset;
-        self.graph_renderer.offset += d_offset;
+        // TODO: Graph offset
     }
 
     // TODO: Implement method

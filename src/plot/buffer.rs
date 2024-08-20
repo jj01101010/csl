@@ -7,7 +7,7 @@ pub enum BufferType {
 }
 
 pub struct Buffer {
-    pub id: u32,
+    id: u32,
     gl: gl::Gl,
 }
 

@@ -1,7 +1,7 @@
 use gl::{self, Gl};
 
 pub struct VertexArray {
-    pub id: u32,
+    id: u32,
     gl: Gl,
 }
 

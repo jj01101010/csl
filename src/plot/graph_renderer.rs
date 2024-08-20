@@ -73,8 +73,10 @@ impl GraphRenderer {
             .set(self.proj_matrix * translation);
 
         unsafe {
+            //self.gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+
             self.gl
-                .DrawArrays(gl::LINE_STRIP, 0, graph.data.len() as i32);
+                .DrawArrays(gl::TRIANGLE_STRIP, 0, (graph.data.len() + 1) as i32);
         }
     }
 }
