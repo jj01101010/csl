@@ -3,11 +3,12 @@ use glam::Vec2;
 use std::{mem::size_of, vec};
 
 use super::{
-    graph::{Graph, GraphProperties},
-    vao::VertexArray,
+    super::graph::{Graph, GraphProperties},
+    super::vao::VertexArray,
+    super::layout::layout::Layout,
 };
 
-use crate::plot::buffer::{Buffer, BufferType};
+use crate::plot::{buffer::{Buffer, BufferType}, layout::layout::EmptyLayout};
 
 pub struct Quad {
     vao: VertexArray,
@@ -77,54 +78,56 @@ pub struct Figure {
     pub pos: [f32; 2],
     pub graphs: Vec<Graph>,
     pub offset: Vec2,
+    layout: Box<dyn Layout>,
 }
 
-/* TODO: Add enum FigureLayout {
-    Manual(w, h),
-    Aspect(aspect),
-    None // Free layout from window
-} to FigureProperties
-*/
-
 pub struct FigureProperties {
-    pub width: Option<f32>,
-    pub height: Option<f32>,
+    pub size: [f32; 2],
     pub offset: Vec2,
     pub graphs: Vec<GraphProperties>,
+    pub layout: Box<dyn Layout>,
 }
 
 impl Default for FigureProperties {
     fn default() -> Self {
         Self {
             graphs: vec![],
-            width: None,
-            height: None,
+            size: [500.0, 500.0],
             offset: Vec2::ZERO,
+            layout: Box::new(EmptyLayout)
         }
     }
 }
 
+// TODO: Make Figure Builder 
+// graph = GraphBuilder.new().data().xlim(0, 100)....build()
+// builder
+//    .title("Title") // Adds default Layout for Title
+//    .graph(graph)   // Adds default Layout for Graph
+
 impl Figure {
     pub fn new(gl: Gl, properties: FigureProperties) -> Self {
-        let width = properties.width.unwrap_or(300.0);
-        let height = properties.height.unwrap_or(300.0);
-
         Self {
             render_quad: Quad::new(&gl),
-            pos: [width / 2.0, height / 2.0],
-            size: [width, height],
+            pos: [0.0, 0.0],
+            size: properties.size,
             graphs: properties
                 .graphs
                 .into_iter()
                 .map(|g_prop| Graph::new(gl.clone(), g_prop))
                 .collect(),
             offset: properties.offset,
+            layout: properties.layout,
         }
     }
 
-    pub fn add_offset(&mut self, d_offset: Vec2) {
-        self.offset += d_offset;
+    pub fn add_offset(&mut self, offset: Vec2) {
+        self.offset += offset;
         // TODO: Graph offset
+    }
+
+    pub fn recalculate_layout(&mut self, parent: &Box<dyn Layout>) {
+        self.layout.calculate_size(Some(parent));
     }
 
     // TODO: Implement method

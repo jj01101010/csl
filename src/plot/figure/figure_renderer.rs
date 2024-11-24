@@ -2,14 +2,13 @@ use glam::{Mat4, Quat, Vec2, Vec3};
 
 use super::{
     figure::Figure,
-    shader::{Shader, ShaderProgram, ShaderType, ShaderUniform},
+    super::shader::{Shader, ShaderProgram, ShaderType, ShaderUniform},
 };
 
 struct FigureShader {
     shader: ShaderProgram,
     transform_uniform: ShaderUniform<Mat4>,
     offset_uniform: ShaderUniform<Vec2>,
-    pitch_uniform: ShaderUniform<Vec2>,
 }
 
 pub struct FigureRenderer {
@@ -36,11 +35,9 @@ impl FigureRenderer {
         // Get the corresponding uniform variables
         let transform_uniform = ShaderUniform::load(gl.clone(), &figure_shader, "transform");
         let offset_uniform = ShaderUniform::load(gl.clone(), &figure_shader, "offset");
-        let pitch_uniform: ShaderUniform<Vec2> =
-            ShaderUniform::load(gl.clone(), &figure_shader, "pitch");
 
         // Calculate the projection matrix
-        let proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
+        let proj = glam::Mat4::orthographic_lh(0.0, 500.0, 0.0, 500.0, 0.01, 100.0);
 
         Self {
             gl,
@@ -48,7 +45,6 @@ impl FigureRenderer {
                 shader: figure_shader,
                 transform_uniform,
                 offset_uniform,
-                pitch_uniform,
             },
             proj_matrix: proj,
         }
@@ -60,9 +56,6 @@ impl FigureRenderer {
 
         figure.render_quad.bind();
 
-        self.figure_shader
-            .pitch_uniform
-            .set(Vec2 { x: 100.0, y: 100.0 });
         let translation = glam::Mat4::from_scale_rotation_translation(
             Vec3::new(figure.size[0], figure.size[1], 1.0),
             Quat::IDENTITY,

@@ -12,9 +12,14 @@ path = "src/lib.rs"
 
 [dependencies]
 bytemuck = "1"
-glfw = "0.55.0"
 imagine = "0.0.5"
-gl = { path = "lib/gl" }
+
+glfw = {version = "0.55.0", optional = true}
+gl = { path = "lib/gl", optional = true}
 glam = "0.25.0"
 log = "0.4.21"
 env_logger = "0.11.3"
+
+[features]
+default = ["plotting"]
+plotting = ["dep:glfw", "dep:gl"]

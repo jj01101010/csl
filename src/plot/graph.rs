@@ -1,7 +1,7 @@
 use std::{f32::consts::PI, mem::size_of};
 
 use gl::Gl;
-use glam::Vec3;
+use glam::{Vec2, Vec3};
 
 use super::{
     buffer::{Buffer, BufferType},
@@ -32,8 +32,9 @@ pub struct Graph {
     pub data: Vec<Point>,
     pub graph_vao: VertexArray,
     pub graph_vbo: Buffer,
-    pub position: Vec3,
     pub animation: Option<AnimationCallback>,
+    pub pos: Vec3,
+    pub size: Vec2,
 }
 
 impl Graph {
@@ -83,7 +84,7 @@ impl Graph {
     pub fn new(gl: Gl, properties: GraphProperties) -> Self {
         let data = properties.data;
 
-        let graph_vertices = Graph::generate_quads_from_graph(&data, 0.001);
+        let graph_vertices = Graph::generate_quads_from_graph(&data, 0.005);
 
         let graph_vao = VertexArray::new(gl.clone()).expect("Could not create VAO");
         graph_vao.bind();
@@ -116,7 +117,8 @@ impl Graph {
             graph_vao,
             graph_vbo,
             animation: properties.anim,
-            position: Vec3::new(150.0, 150.0, -1.0 * properties.zindex as f32),
+            pos: Vec3::new(250.0, 250.0, -1.0 * properties.zindex as f32),
+            size: Vec2::new(250.0, 250.0)
         }
     }
 

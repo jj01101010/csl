@@ -44,7 +44,7 @@ impl GraphRenderer {
         let graph_offset_uniform: ShaderUniform<Vec2> =
             ShaderUniform::load(gl.clone(), &graph_shader, "offset");
 
-        let proj = glam::Mat4::orthographic_lh(0.0, 300.0, 0.0, 300.0, 0.01, 100.0);
+        let proj = glam::Mat4::orthographic_lh(0.0, 500.0, 0.0, 500.0, 0.01, 100.0);
 
         Self {
             graph_shader: GraphShader {
@@ -62,9 +62,9 @@ impl GraphRenderer {
         graph.graph_vao.bind();
 
         let translation = glam::Mat4::from_scale_rotation_translation(
-            Vec3::new(150.0, 150.0, 1.0),
+            Vec3::new(graph.size.x, graph.size.x, 1.0),
             Quat::IDENTITY,
-            graph.position,
+            graph.pos,
         );
         self.graph_shader.shader.use_program();
         self.graph_shader.offset_uniform.set(self.offset);

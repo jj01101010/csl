@@ -3,8 +3,7 @@ use glam::Vec2;
 use glfw::{fail_on_errors, Action, Context, GlfwReceiver, Key, MouseButton, PWindow, WindowEvent};
 
 use super::{
-    figure::{Figure, FigureProperties},
-    figure_renderer::FigureRenderer,
+    figure::{figure::{Figure, FigureProperties}, figure_renderer::FigureRenderer},
     graph_renderer::GraphRenderer,
 };
 
@@ -41,7 +40,7 @@ impl Default for PlotWindowProperties {
             width: 300,
             height: 300,
             title: "CLS plot window".to_string(),
-            resizable: true,
+            resizable: false,
         }
     }
 }
@@ -108,6 +107,12 @@ impl PlotWindow {
             gl,
         }
     }
+
+    // fn recalculate_figure_layout(&mut self) {
+    //     for figure in &mut self.figures {
+    //         // figure.recalculate_layout(&self.layout);
+    //     }
+    // }
 
     pub fn run(&mut self) {
         #[cfg(debug_assertions)]
@@ -208,5 +213,6 @@ impl PlotWindow {
     pub fn add_figure(&mut self, figure_properties: FigureProperties) {
         self.figures
             .push(Figure::new(self.gl.clone(), figure_properties));
+        // self.recalculate_figure_layout();
     }
 }
