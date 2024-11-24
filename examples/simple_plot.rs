@@ -1,14 +1,15 @@
 use std::{f32::consts::PI, iter::zip};
 
-use csl::plot::{
-    figure::figure::FigureProperties,
-    graph::{GraphProperties, Point},
-    window::PlotWindowProperties,
-};
-
 extern crate csl;
 
+#[cfg(feature="plotting")]
 fn main() {
+    use csl::plot::{
+        figure::figure::FigureProperties,
+        graph::{GraphProperties, Point},
+        window::PlotWindowProperties,
+    };
+    
     // Initialize data points
     let x = (0..=100).map(|x| (x as f32) / 100.0);
     let y = x.clone().map(|x| f32::sin(2.0 * PI * x));
@@ -35,4 +36,9 @@ fn main() {
     });
 
     window.run();
+}
+
+#[cfg(not(feature = "plotting"))]
+fn main() {
+
 }
